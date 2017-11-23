@@ -442,7 +442,7 @@ pub struct VerifyClaim {
     pub p_pub_key: IssuerPublicKey,
     pub r_pub_key: Option<IssuerRevocationPublicKey>,
     pub r_reg: Option<RevocationRegistryPublic>,
-    pub attrs_with_predicates: ProofAttrs
+    pub proof_attrs: ProofAttrs
 }
 
 pub struct PrimaryEqualProof {
