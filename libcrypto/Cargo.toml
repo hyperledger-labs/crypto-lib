@@ -1,14 +1,14 @@
 [package]
-name = "indy-crypto"
+name = "crypto-lib"
 version = "0.4.2"
-authors = ["Artemkaaas <artem.ivanov@dsr-company.com>"]
-description = "This is the shared crypto library for Hyperledger Indy components."
+authors = ["Michael Lodder"]
+description = "This is the shared crypto library for Hyperledger components"
 license = "MIT/Apache-2.0"
 
 [lib]
-name = "indy_crypto"
+name = "hl_crypto"
 path = "src/lib.rs"
-crate-type = ["staticlib","rlib", "dylib"]
+crate-type = ["staticlib","rlib", "cdylib"]
 
 [features]
 default = ["bn_openssl", "pair_amcl", "serialization"]
