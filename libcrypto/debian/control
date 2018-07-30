@@ -1,21 +1,21 @@
-Source: libindy-crypto
+Source: libhl-crypto
 Section: devel
 Priority: optional
 Maintainer: Hyperledger <info@hyperledger.org>
 Build-Depends: libssl1.0.0
 Standards-Version: 0.0.1
-Vcs-Git: https://github.com/hyperledger/indy-crypto/
-Vcs-Browser: https://github.com/hyperledger/indy-crypto/
+Vcs-Git: https://github.com/hyperledger-labs/crypto-lib/
+Vcs-Browser: https://github.com/hyperledger-labs/crypto-lib/
 
 
-Package: libindy-crypto
+Package: libhl-crypto
 Architecture: amd64
 Depends: libssl1.0.0
 Suggests: build-essential
-Description: This is the shared crypto libirary for Hyperledger Indy components.
+Description: This is the shared crypto library for Hyperledger components.
 
-Package: libindy-crypto-dev
+Package: libhl-crypto-dev
 Architecture: amd64
-Depends: libindy-crypto
+Depends: libhl-crypto
 Suggests: build-essential
-Description: This is the shared crypto libirary for Hyperledger Indy components.
+Description: This is the shared crypto libirary for Hyperledger components.

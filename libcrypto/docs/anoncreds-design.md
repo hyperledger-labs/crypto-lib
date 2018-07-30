@@ -1,13 +1,13 @@
 # Anonymous Credentials (anoncreds) crypto support
-Initial version of anoncreds protocol was implemented as part of Indy SDK (https://github.com/hyperledger/indy-sdk). After some discussion and community requests we decided to move low level anoncreds crypto code to indy-crypto project. This should allow the crypto to be audited and shared with other projects.
+Initial version of anoncreds protocol was implemented as part of Indy SDK (https://github.com/hyperledger/indy-sdk). After some discussion and community requests we decided to move low level anoncreds crypto code to crypto-lib project. This should allow the crypto to be audited and shared with other projects.
 
 ## Main ideas
-1. Indy-crypto will not provide high level anoncreds protocol details and persistence. It will support low level crypto entities only. 
+1. Crypto-lib will not provide high level anoncreds protocol details and persistence. It will support low level crypto entities only.
 1. API defines 3 actors:
     * Issuer - trust source that provides credentials to prover
     * Prover - credentials owner that can proof and partially disclose the credentials to verifier
     * Verifier - party that wants to check that prover has some credentials provided by issuer
-1. The list of entities that indy-crypto operates on:
+1. The list of entities that crypto-lib operates on:
     * Credential Schema - a list of attribute names in a Credential
     * Credential Values - values of a Credential Schema's attributes corresponding to a specific prover (must be integers)
     * Credential Signature - Issuer's signature over Credential Values
@@ -30,7 +30,7 @@ Initial version of anoncreds protocol was implemented as part of Indy SDK (https
 ## API 
 ### API V2
 #### Goals
-* Indy Crypto should have ability to work with large volume of Tails (can be larger rather RAM)
+* Crypto-Lib should have ability to work with large volume of Tails (can be larger rather RAM)
   *  should allow to calculate revocation witness on cloud agent with minimal disclosing sensitive data
 * API entities should be consistent with Indy Ledger transactions
 
