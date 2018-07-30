@@ -38,34 +38,34 @@ Initial version of anoncreds protocol was implemented as part of Indy SDK (https
 * `RevocationRegistry` now will be created without full `Tails` in RAM as part of returned value.
 Instead of it, TailsGenerator will be returned to generate all tails one by one and store in application manner.
 * `Witness` now became in separate entity and should be updated out of call `ProofBuilder::add_sub_proof_request`
-* IndyCrypto defines `RevocationTailAccessor` trait. Application should implement this and handle calls from IndyCrypto such as `access_tail(id, indy_crypto_cb(tail))`
+* HLCrypto defines `RevocationTailAccessor` trait. Application should implement this and handle calls from HLCrypto such as `access_tail(id, hl_crypto_cb(tail))`
 
 ### Credential and Proof attributes builders
 ```Rust
-CredentialSchemaBuilder::new() -> Result<CredentialSchemaBuilder, IndyCryptoError>
+CredentialSchemaBuilder::new() -> Result<CredentialSchemaBuilder, HLCryptoError>
 
 CredentialSchemaBuilder::add_attr(mut self, attr: &str) ->
-                                       Result<CredentialSchemaBuilder, IndyCryptoError>
+                                       Result<CredentialSchemaBuilder, HLCryptoError>
 
-CredentialSchemaBuilder::finalize(self) -> Result<CredentialSchema, IndyCryptoError>
+CredentialSchemaBuilder::finalize(self) -> Result<CredentialSchema, HLCryptoError>
 
-CredentialValuesBuilder::new() -> Result<CredentialValuesBuilder, IndyCryptoError>
+CredentialValuesBuilder::new() -> Result<CredentialValuesBuilder, HLCryptoError>
 
 CredentialValuesBuilder::add_value(mut self, attr: &str, dec_value: &str) ->
-                                 Result<CredentialValuesBuilder, IndyCryptoError>
+                                 Result<CredentialValuesBuilder, HLCryptoError>
 
-CredentialValuesBuilder::finalize(self) -> Result<CredentialValues, IndyCryptoError>
+CredentialValuesBuilder::finalize(self) -> Result<CredentialValues, HLCryptoError>
 
-SubProofRequestBuilder::new() -> Result<SubProofRequestBuilder, IndyCryptoError>
+SubProofRequestBuilder::new() -> Result<SubProofRequestBuilder, HLCryptoError>
 
 SubProofRequestBuilder::add_revealed_attr(mut self, attr: &str) -> 
-                                      Result<SubProofRequestBuilder, IndyCryptoError>
+                                      Result<SubProofRequestBuilder, HLCryptoError>
 
 
 SubProofRequestBuilder::add_predicate(mut self, predicate: &Predicate) -> 
-                                      Result<SubProofRequestBuilder, IndyCryptoError>
+                                      Result<SubProofRequestBuilder, HLCryptoError>
 
-SubProofRequestBuilder::finalize(self) -> Result<SubProofRequest, IndyCryptoError>
+SubProofRequestBuilder::finalize(self) -> Result<SubProofRequest, HLCryptoError>
 ```
 
 ### Tails
@@ -74,11 +74,11 @@ impl Iterator<Tail> for RevocationTailsGenerator
 
 RevocationTailsGenerator::next() -> Option<Tail>
 
-Tail::from_bytes(bytes: &[u8]) -> Result<Tail, IndyCryptoError>
+Tail::from_bytes(bytes: &[u8]) -> Result<Tail, HLCryptoError>
 Tail::to_bytes(&self) -> Vec<u8>
 
 trait RevocationTailsAccessor {
-    fn access_tail(&self, tail_id: u32, accessor: &mut FnMut(&Tail)) -> Result<(), IndyCryptoError)>
+    fn access_tail(&self, tail_id: u32, accessor: &mut FnMut(&Tail)) -> Result<(), HLCryptoError)>
 }
 ```
 
@@ -87,11 +87,11 @@ trait RevocationTailsAccessor {
 Witness::new<RTA>(rev_idx: u32,
                   max_cred_num: u32,
                   r_reg_delta: &RevocationRegisterDelta /* from initial moment to current */,
-                  r_tails_accessor: RTA) -> Result<Witness, IndyCryptoError>
+                  r_tails_accessor: RTA) -> Result<Witness, HLCryptoError>
                     where RTA: RevocationTailsAccessor
 
 Witness::update<RTA>(&mut self, delta: &RevocationRegisterDelta, rev_idx: u32, max_cred_num: u32, r_tails_accessor: RTA) ->
-                     Result<(), IndyCryptoError>
+                     Result<(), HLCryptoError>
                         where RTA: RevocationTailsAccessor
 ```
 
@@ -123,7 +123,7 @@ RevocationRegistryDelta::revert(&mut self, other: &RevocationRegistryDelta) -> (
 ### Issuer
 ```Rust
 Issuer::new_cred_def(attrs: &CredentialSchema, support_revocation: bool) ->
-                          Result<(CredentialPublicKey, CredentialPrivateKey, CredentialKeyCorrectnessProof), IndyCryptoError>
+                          Result<(CredentialPublicKey, CredentialPrivateKey, CredentialKeyCorrectnessProof), HLCryptoError>
 
 Issuer::new_revocation_registry_def(issuer_pub_key: &CredentialPublicKey,
                                     max_cred_num: u32,
@@ -131,7 +131,7 @@ Issuer::new_revocation_registry_def(issuer_pub_key: &CredentialPublicKey,
                                                                           RevocationKeyPrivate,
                                                                           RevocationRegistry,
                                                                           RevocationTailsGenerator),
-                                                                         IndyCryptoError>
+                                                                         HLCryptoError>
 
 Issuer::sign_credential<RTA>(prover_id: &str,
                              blinded_ms: &BlindedMasterSecret,
@@ -146,19 +146,19 @@ Issuer::sign_credential<RTA>(prover_id: &str,
                              r_reg: Option<&mut RevocationRegistry>,
                              r_key_priv: Option<&RevocationKeyPrivate>,
                              rev_tails_accessor: RTA) ->
-                                        Result<(CredentialSignature, SignatureCorrectnessProof, Optional<RevocationRegistryDelta>), IndyCryptoError>
+                                        Result<(CredentialSignature, SignatureCorrectnessProof, Optional<RevocationRegistryDelta>), HLCryptoError>
                                             where RTA: RevocationTailsAccessor
 
 Issuer::revoke_credential<RTA>(r_reg: &mut RevocationRegistry,
                                max_cred_num: u32,
                                rev_idx: u32,
-                               r_tails_accessor: RTA) -> Result<RevocationRegistryDelta, IndyCryptoError>
+                               r_tails_accessor: RTA) -> Result<RevocationRegistryDelta, HLCryptoError>
                                 where RTA: RevocationTailsAccessor
 ```
 
 ### Prover
 ```Rust
-Prover::new_master_secret() -> Result<MasterSecret, IndyCryptoError>
+Prover::new_master_secret() -> Result<MasterSecret, HLCryptoError>
 
 Prover::blind_master_secret(credential_pub_key: &CredentialPublicKey,
                             credential_key_correctness_proof: &CredentialKeyCorrectnessProof,
@@ -166,13 +166,13 @@ Prover::blind_master_secret(credential_pub_key: &CredentialPublicKey,
                             master_secret_blinding_nonce: &Nonce) -> Result<(BlindedMasterSecret,
                                                                              MasterSecretBlindingData,
                                                                              BlindedMasterSecretProofCorrectness),
-                                                                            IndyCryptoError>
+                                                                            HLCryptoError>
 
 Prover::process_credential_signature(credential_signature: &mut CredentialSignature,
                                      blinded_master_secret_data: &BlindedMasterSecretData,
                                      p_pub_key: &CredentialPublicKey,
-                                     r_pub_key: Option<&RevocationKeyPublic>) -> Result<(), IndyCryptoError>
-Prover::new_proof_builder() -> Result<ProofBuilder, IndyCryptoError>
+                                     r_pub_key: Option<&RevocationKeyPublic>) -> Result<(), HLCryptoError>
+Prover::new_proof_builder() -> Result<ProofBuilder, HLCryptoError>
 
 ProofBuilder::add_sub_proof_request(&mut self,
                                     key_id: &str,
@@ -183,18 +183,18 @@ ProofBuilder::add_sub_proof_request(&mut self,
                                     pub_key: &CredentialPublicKey,
                                     r_reg: Option<&RevocationRegistry>
                                     witness: Option<&Witness>)
-                                        -> Result<(),  IndyCryptoError>
+                                        -> Result<(),  HLCryptoError>
 
 ProofBuilder::finalize(&mut self,
                        nonce: &Nonce,
-                       ms: &MasterSecret) -> Result<Proof, IndyCryptoError>
+                       ms: &MasterSecret) -> Result<Proof, HLCryptoError>
 ```
 
 ### Verifier
 ```Rust
-Verifier::new_nonce() -> Result<Nonce, IndyCryptoError>
+Verifier::new_nonce() -> Result<Nonce, HLCryptoError>
 
-Verifier::new_proof_verifier() -> Result<ProofVerifier, IndyCryptoError>
+Verifier::new_proof_verifier() -> Result<ProofVerifier, HLCryptoError>
 
 ProofVerifier::add_sub_proof_request(&mut self,
                                      key_id: &str,
@@ -203,10 +203,10 @@ ProofVerifier::add_sub_proof_request(&mut self,
                                      p_pub_key: &CredentialPublicKey,
                                      r_pub_key: Option<&RevocationKeyPublic>,
                                      rev_reg: Option<&RevocationRegistry>)
-                                            -> Result<(), IndyCryptoError>
+                                            -> Result<(), HLCryptoError>
 
 
 ProofVerifier::verify(self,
                       proof: &Proof,
-                      nonce: &Nonce) -> Result<bool, IndyCryptoError>
+                      nonce: &Nonce) -> Result<bool, HLCryptoError>
 ```
