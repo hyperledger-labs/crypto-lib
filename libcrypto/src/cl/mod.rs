@@ -1164,6 +1164,7 @@ mod test {
     use self::issuer::Issuer;
     use self::prover::Prover;
     use self::verifier::Verifier;
+    use std::time::Instant;
 
     #[test]
     fn credential_primary_public_key_conversion_works() {
@@ -1236,6 +1237,87 @@ mod test {
         assert_eq!(two, one);
     }
 
+    #[ignore]
+    #[test]
+    fn benchmark_credential_key_correctness_proof() {
+        const DUMMY_ATTS: i32 = 94;
+
+        let mut credential_schema_builder = Issuer::new_credential_schema_builder().unwrap();
+        credential_schema_builder.add_attr("name").unwrap();
+        credential_schema_builder.add_attr("sex").unwrap();
+        credential_schema_builder.add_attr("age").unwrap();
+        credential_schema_builder.add_attr("height").unwrap();
+        credential_schema_builder.add_attr("weight").unwrap();
+        credential_schema_builder.add_attr("income").unwrap();
+        for i in 1..DUMMY_ATTS {
+            credential_schema_builder.add_attr(&format!("dummy{}", i)).unwrap();
+        }
+        let credential_schema = credential_schema_builder.finalize().unwrap();
+
+        let mut non_credential_schema_builder = NonCredentialSchemaBuilder::new().unwrap();
+        non_credential_schema_builder.add_attr("master_secret").unwrap();
+        let non_credential_schema = non_credential_schema_builder.finalize().unwrap();
+
+        let (cred_pub_key, cred_priv_key, cred_key_correctness_proof) = Issuer::new_credential_def(&credential_schema, &non_credential_schema, true).unwrap();
+
+        let master_secret = Prover::new_master_secret().unwrap();
+
+        let mut credential_values_builder = Issuer::new_credential_values_builder().unwrap();
+        credential_values_builder.add_value_hidden("master_secret", &master_secret.value().unwrap()).unwrap();
+        credential_values_builder.add_dec_known("name", "1139481716457488690172217916278103335").unwrap();
+        credential_values_builder.add_dec_known("sex", "5944657099558967239210949258394887428692050081607692519917050011144233115103").unwrap();
+        credential_values_builder.add_dec_known("age", "28").unwrap();
+        credential_values_builder.add_dec_known("height", "175").unwrap();
+        credential_values_builder.add_dec_known("weight", "70").unwrap();
+        credential_values_builder.add_dec_known("income", "60000").unwrap();
+        for i in 1..DUMMY_ATTS {
+            credential_values_builder.add_dec_known(&format!("dummy{}", i), &format!("{}", i)).unwrap();
+        }
+
+        let cred_values = credential_values_builder.finalize().unwrap();
+
+        let now = Instant::now();
+        let mut count = 0.0;
+        const SAMPLES: i32 = 100;
+
+        for _ in 1..SAMPLES {
+            let snap = Instant::now();
+            let credential_nonce = new_nonce().unwrap();
+            let (blinded_credential_secrets, credential_secrets_blinding_factors, blinded_credential_secrets_correctness_proof) =
+                Prover::blind_credential_secrets(&cred_pub_key,
+                                            &cred_key_correctness_proof,
+                                            &cred_values,
+                                            &credential_nonce).unwrap();
+
+
+            let cred_issuance_nonce = new_nonce().unwrap();
+
+            let (mut cred_signature, signature_correctness_proof) = Issuer::sign_credential("CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW",
+                                                                                            &blinded_credential_secrets,
+                                                                                            &blinded_credential_secrets_correctness_proof,
+                                                                                            &credential_nonce,
+                                                                                            &cred_issuance_nonce,
+                                                                                            &cred_values,
+                                                                                            &cred_pub_key,
+                                                                                            &cred_priv_key).unwrap();
+
+            Prover::process_credential_signature(&mut cred_signature,
+                                                 &cred_values,
+                                                 &signature_correctness_proof,
+                                                 &credential_secrets_blinding_factors,
+                                                 &cred_pub_key,
+                                                 &cred_issuance_nonce,
+                                                 None,
+                                                 None,
+                                                 None).unwrap();
+            let elapsed = snap.elapsed();
+            count += elapsed.as_secs() as f64 + elapsed.subsec_nanos() as f64 * 1e-9;
+        }
+
+        let total_elapsed = now.elapsed();
+        println!("Average time per proof {:?}", (count / SAMPLES as f64));
+        println!("Total time {:?}", total_elapsed.as_secs() as f64 + total_elapsed.subsec_nanos() as f64 *1e-9);
+    }
 
     #[test]
     fn demo() {
