@@ -373,17 +373,12 @@ def publishingRCtoStable() {
 
 def publishLibindyCryptoWindowsFilesRCtoStable(version) {
     rcFullVersion = "${version}-${env.BUILD_NUMBER}"
-    withCredentials([file(credentialsId: 'EvernymRepoSSHKey', variable: 'key')]) {
-        for (os in ['ubuntu', 'windows']) { //FIXME add rhel IS-307
-            src = "/var/repository/repos/libindy_crypto/$os/rc/$rcFullVersion/"
-            target = "/var/repository/repos/libindy_crypto/$os/stable/$version"
-            //should not exists
-            sh "ssh -v -oStrictHostKeyChecking=no -i '$key' repo@192.168.11.111 '! ls $target'"
-            sh "ssh -v -oStrictHostKeyChecking=no -i '$key' repo@192.168.11.111 cp -r $src $target"
-        }
-    }
-    finally {
-        sh 'rm -f ~/.ssh/$sovrin_repo_key'
+    withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'sovrin_repo_key')]) {
+        src = "/var/repository/repos/windows/libindy_crypto/rc/$rcFullVersion/"
+        target = "/var/repository/repos/windows/libindy_crypto/stable/$version"
+
+        sh "ssh -v -oStrictHostKeyChecking=no -i '$sovrin_repo_key' repo@192.168.11.115 '! ls $target'"
+        sh "ssh -v -oStrictHostKeyChecking=no -i '$sovrin_repo_key' repo@192.168.11.115 cp -r $src $target"
     }
 }
 

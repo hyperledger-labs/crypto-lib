@@ -289,7 +289,7 @@ pub struct CredentialPrivateKey {
 pub struct CredentialPrimaryPublicKey {
     n: BigNumber,
     s: BigNumber,
-    r: BTreeMap<String /* attr_name */, BigNumber>,
+    r: HashMap<String /* attr_name */, BigNumber>,
     rctxt: BigNumber,
     z: BigNumber
 }
