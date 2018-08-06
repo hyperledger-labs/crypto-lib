@@ -1,0 +1,33 @@
+[package]
+name = "crypto-lib"
+version = "0.1.0"
+authors = ["Michael Lodder"]
+description = "This is the shared crypto library for Hyperledger components"
+license = "MIT/Apache-2.0"
+
+[lib]
+name = "hl_crypto"
+path = "src/lib.rs"
+crate-type = ["staticlib","rlib", "cdylib"]
+
+[features]
+default = ["bn_openssl", "pair_amcl", "serialization"]
+bn_openssl = ["openssl", "int_traits"]
+pair_amcl = ["amcl"]
+serialization = ["serde", "serde_json", "serde_derive"]
+
+[dependencies]
+amcl = { version = "0.1.2",  optional = true, default-features = false, features = ["BN254"]}
+int_traits = { version = "0.1.1", optional = true }
+libc = "0.2.33"
+log = "0.3.8"
+rand = "0.3"
+sha2 = "0.7.1"
+sha3 = "0.7.3"
+time = "0.1.36"
+env_logger = "0.4.3"
+openssl = { version = "0.9", optional = true }
+serde = { version = "1.0",  optional = true}
+serde_json = { version = "1.0",  optional = true}
+serde_derive = { version = "1.0",  optional = true}
+lazy_static = "1.0"
