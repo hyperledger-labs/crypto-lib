@@ -21,35 +21,34 @@ Hart Montgomery
 
 If you haven't done so already, please visit the main resource for all things "Indy" to get acquainted with the code base, helpful resources, and up-to-date information: [Hyperledger Wiki-Indy](https://wiki.hyperledger.org/projects/indy).
 
-# Indy Crypto
+# Crypto Lib
 
-This is the shared crypto library for [Hyperledger Indy](https://www.hyperledger.org/projects) components.
+This is the shared crypto library for [Hyperledger](https://www.hyperledger.org/projects) components.
 
-[Hyperledger Indy](https://www.hyperledger.org/projects) provides a distributed-ledger-based foundation for [self-sovereign identity](https://sovrin.org).
+[Hyperledger](https://www.hyperledger.org/projects) provides a distributed-ledger-based foundation for [self-sovereign identity](https://sovrin.org).
 
-The major artifacts of the Indy Crypto are:
+The major artifacts of the Crypto Lib are:
 * С-callable library interface
 * Rust сrate
-* Python wrapper
 
 All bugs, stories, and backlog for this project are managed through [Hyperledger's Jira](https://jira.hyperledger.org)
 in project IS (note that regular Indy tickets are in the INDY project instead...). Also, join
 us on [Jira's Rocket.Chat](chat.hyperledger.org) at #indy-sdk to discuss.
 
-## Building Indy Crypto
+## Building Crypto-Lib
 
 1. Install Rust and rustup (https://www.rust-lang.org/install.html).
 1. Checkout and build the library:
 
    ```
-   git clone https://github.com/hyperledger/indy-crypto.git
-   cd ./indy-crypto/libindy-crypto
+   git clone https://github.com/hyperledger-labs/crypto-lib.git
+   cd ./crypto-lib/libhl-crypto
    cargo build
    cd ..
    ```
 1. Run tests
    ```
-   cd libindy-crypto
+   cd libhl-crypto
    cargo test
    ```
 **Note:**
@@ -76,10 +75,6 @@ API documentation is now available as rust doc in code. See:
 * Rust API
     - [BLS](libindy-crypto/src/bls/mod.rs)
     - [CL](libindy-crypto/src/cl)
-
-## Wrappers documentation
-
-* [Python](wrappers/python/README.md)
 
 ## Binaries
 
