@@ -6,10 +6,11 @@ use rand::Rng;
 use rand::os::OsRng;
 
 use amcl_3::rand::RAND;
-use amcl_3::secp256k1::ecdh;
+use amcl_3::secp256k1::{ecdh, ecp};
 
 pub const PRIVATE_KEY_SIZE: usize = ecdh::EFS;
 pub const PUBLIC_KEY_SIZE: usize = ecdh::EFS+1;
+pub const PUBLIC_UNCOMPRESSED_KEY_SIZE: usize = ecdh::EFS*2+1;
 pub const SIGNATURE_POINT_SIZE: usize = ecdh::EFS;
 pub const SIGNATURE_SIZE: usize = ecdh::EFS*2;
 pub const ALGORITHM_NAME: &str = "ECDSA_SECP256K1_SHA256";
@@ -29,33 +30,70 @@ pub struct EcdsaSecp256K1Sha256PublicKey {
 }
 
 impl EcdsaSecp256K1Sha256PublicKey {
-    pub fn as_slice(&self) -> &[u8] {
-        &self.value[..]
+    pub fn as_slice(&self) -> &[u8; PUBLIC_KEY_SIZE] {
+        &self.value
     }
 
     pub fn as_hex(&self) -> String {
         bin2hex(&self.value[..])
     }
 
-    pub fn from_slice(data: &[u8]) -> Result<EcdsaSecp256K1Sha256PublicKey, CryptoError> {
-        if data.len() != PUBLIC_KEY_SIZE {
-            Err(CryptoError::KeyGenError(format!("Expected {} bytes for a public key", PUBLIC_KEY_SIZE)))
-        } else {
+    pub fn as_uncompressed_slice(&self) -> [u8; PUBLIC_UNCOMPRESSED_KEY_SIZE] {
+        let mut uncompressed = [0u8; PUBLIC_UNCOMPRESSED_KEY_SIZE];
+        ecp::ECP::frombytes(&self.value[..]).tobytes(&mut uncompressed, false);
+        uncompressed
+    }
+
+    pub fn as_uncompressed_hex(&self) -> String {
+        bin2hex(&self.as_uncompressed_slice()[..])
+    }
+
+    pub fn from_slice(data: &[u8; PUBLIC_KEY_SIZE]) -> Result<EcdsaSecp256K1Sha256PublicKey, CryptoError> {
+        if ecdh::public_key_validate(&data[..]) == 0 {
             let mut value = [0u8; PUBLIC_KEY_SIZE];
             array_copy!(data, value);
             Ok(EcdsaSecp256K1Sha256PublicKey { value })
+        } else {
+            Err(CryptoError::ParseError("Invalid public key".to_string()))
         }
     }
 
     pub fn from_hex(data: &str) -> Result<EcdsaSecp256K1Sha256PublicKey, CryptoError> {
         let bin = hex2bin(data)?;
-        EcdsaSecp256K1Sha256PublicKey::from_slice(bin.as_slice())
+        if bin.len() != PUBLIC_KEY_SIZE {
+            Err(CryptoError::ParseError("Invalid public key".to_string()))
+        } else {
+            let mut bytes = [0u8; PUBLIC_KEY_SIZE];
+            array_copy!(bin, bytes);
+            EcdsaSecp256K1Sha256PublicKey::from_slice(&bytes)
+        }
+    }
+
+    pub fn from_uncompressed_slice(data: &[u8; PUBLIC_UNCOMPRESSED_KEY_SIZE]) -> Result<EcdsaSecp256K1Sha256PublicKey, CryptoError> {
+        if ecdh::public_key_validate(&data[..]) == 0 {
+            let mut compressed = [0u8; PUBLIC_KEY_SIZE];
+            ecp::ECP::frombytes(&data[..]).tobytes(&mut compressed, true);
+            Ok(EcdsaSecp256K1Sha256PublicKey{ value: compressed })
+        } else {
+            Err(CryptoError::ParseError("Invalid public key".to_string()))
+        }
+    }
+
+    pub fn from_uncompressed_hex(data: &str) -> Result<EcdsaSecp256K1Sha256PublicKey, CryptoError> {
+        let bin = hex2bin(data)?;
+        if bin.len() != PUBLIC_UNCOMPRESSED_KEY_SIZE {
+            Err(CryptoError::ParseError("Invalid public key".to_string()))
+        } else {
+            let mut bytes = [0u8; PUBLIC_UNCOMPRESSED_KEY_SIZE];
+            array_copy!(bin, bytes);
+            EcdsaSecp256K1Sha256PublicKey::from_uncompressed_slice(&bytes)
+        }
     }
 }
 
 impl Clone for EcdsaSecp256K1Sha256PublicKey {
     fn clone(&self) -> EcdsaSecp256K1Sha256PublicKey {
-        EcdsaSecp256K1Sha256PublicKey::from_slice(&self.value[..]).unwrap()
+        EcdsaSecp256K1Sha256PublicKey::from_slice(&self.value).unwrap()
     }
 }
 
@@ -75,7 +113,7 @@ impl Eq for EcdsaSecp256K1Sha256PublicKey {}
 
 impl PartialEq for EcdsaSecp256K1Sha256PublicKey {
     fn eq(&self, other: &EcdsaSecp256K1Sha256PublicKey) -> bool {
-        safe_array_compare(&self.value, &other.value)
+        array_compare(&self.value, &other.value)
     }
 }
 
@@ -154,7 +192,7 @@ impl Eq for EcdsaSecp256K1Sha256PrivateKey {}
 
 impl PartialEq for EcdsaSecp256K1Sha256PrivateKey {
     fn eq(&self, other: &EcdsaSecp256K1Sha256PrivateKey) -> bool {
-        safe_array_compare(&self.value, &other.value)
+        array_compare(&self.value, &other.value)
     }
 }
 
@@ -334,6 +372,7 @@ fn get_random_seed(seed: &mut [u8]) -> Result<(), CryptoError> {
 mod test {
     use super::*;
     use secp256k1;
+    use amcl_3::hash256::HASH256;
     use openssl::ecdsa::EcdsaSig;
     use openssl::ec::{EcGroup, EcPoint, EcKey};
     use openssl::nid::Nid;
@@ -364,6 +403,30 @@ mod test {
     }
 
     #[test]
+    fn secp256k1_compatibility() {
+        let s = EcdsaSecp256K1Sha256PrivateKey::from_hex(PRIVATE_KEY).unwrap();
+        let p = EcdsaSecp256K1Sha256PublicKey::from_hex(PUBLIC_KEY).unwrap();
+
+        let p_u = EcdsaSecp256K1Sha256PublicKey::from_uncompressed_slice(&p.as_uncompressed_slice());
+        assert!(p_u.is_ok());
+        let p_u = p_u.unwrap();
+        assert_eq!(p_u, p);
+
+        let context = secp256k1::Secp256k1::new();
+        let sk = secp256k1::key::SecretKey::from_slice(&context, &s.as_slice());
+        assert!(sk.is_ok());
+        let pk = secp256k1::key::PublicKey::from_slice(&context, &p.as_slice()[..]);
+        assert!(pk.is_ok());
+        let pk = secp256k1::key::PublicKey::from_slice(&context, &p.as_uncompressed_slice()[..]);
+        assert!(pk.is_ok());
+
+        let openssl_group = EcGroup::from_curve_name(Nid::SECP256K1).unwrap();
+        let mut ctx = BigNumContext::new().unwrap();
+        let openssl_point = EcPoint::from_bytes(&openssl_group, &p.as_uncompressed_slice()[..], &mut ctx);
+        assert!(openssl_point.is_ok());
+    }
+
+    #[test]
     fn secp256k1_verify() {
         let p = EcdsaSecp256K1Sha256PublicKey::from_hex(PUBLIC_KEY).unwrap();
         let result = p.verify(&MESSAGE_1, hex2bin(SIGNATURE_1).unwrap().as_slice());
@@ -373,8 +436,7 @@ mod test {
         let context = secp256k1::Secp256k1::new();
         let pk = secp256k1::key::PublicKey::from_slice(&context, hex2bin(PUBLIC_KEY).unwrap().as_slice()).unwrap();
 
-        let mut hash= [0u8;32];
-        ecdh::hashit(ecdh::SHA256, &MESSAGE_1, 0, None, 32, &mut hash);
+        let hash= sha256(&MESSAGE_1);
         let msg = secp256k1::Message::from_slice(&hash[..]).unwrap();
 
         //Check if signatures produced here can be verified by libsecp256k1
@@ -417,8 +479,7 @@ mod test {
                 let mut context = secp256k1::Secp256k1::new();
                 let sk = secp256k1::key::SecretKey::from_slice(&context, hex2bin(PRIVATE_KEY).unwrap().as_slice()).unwrap();
 
-                let mut hash= [0u8;32];
-                ecdh::hashit(ecdh::SHA256, &MESSAGE_1, 0, None, 32, &mut hash);
+                let hash= sha256(&MESSAGE_1);
 
                 let msg = secp256k1::Message::from_slice(&hash[..]).unwrap();
                 let sig_1 = context.sign(&msg, &sk).serialize_compact(&context);
@@ -428,10 +489,9 @@ mod test {
                 assert!(result.is_ok());
                 assert!(result.unwrap());
 
-                let pk = secp256k1::key::PublicKey::from_slice(&context, hex2bin(PUBLIC_KEY).unwrap().as_slice()).unwrap();
                 let openssl_group = EcGroup::from_curve_name(Nid::SECP256K1).unwrap();
                 let mut ctx = BigNumContext::new().unwrap();
-                let openssl_point = EcPoint::from_bytes(&openssl_group, &pk.serialize_uncompressed(), &mut ctx).unwrap();
+                let openssl_point = EcPoint::from_bytes(&openssl_group, &p.as_uncompressed_slice()[..], &mut ctx).unwrap();
                 let openssl_pkey = EcKey::from_public_key(&openssl_group, &openssl_point).unwrap();
                 let openssl_skey = EcKey::from_private_components(&openssl_group, &BigNum::from_hex_str(PRIVATE_KEY).unwrap(), &openssl_point).unwrap();
 
@@ -445,8 +505,24 @@ mod test {
                 let result = p.verify(&MESSAGE_1, temp_sig.as_slice());
                 assert!(result.is_ok());
                 assert!(result.unwrap());
+
+                let (s, p) = new_keys().unwrap();
+                match s.sign(&MESSAGE_1) {
+                    Ok(signed) => {
+                        let result = p.verify(&MESSAGE_1, &signed);
+                        assert!(result.is_ok());
+                        assert!(result.unwrap());
+                    },
+                    Err(er) => panic!(er)
+                }
             },
             Err(e) => panic!(e)
         }
+    }
+
+    fn sha256(data: &[u8]) -> [u8; 32] {
+        let mut h=HASH256::new();
+        h.process_array(data);
+        h.hash()
     }
 }

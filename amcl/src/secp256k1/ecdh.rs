@@ -56,7 +56,7 @@ fn inttobytes(n: usize,b:&mut [u8]) {
 	}	
 }
 
-pub fn hashit(sha: usize, a: &[u8],n: usize,b: Option<&[u8]>,pad: usize,w: &mut [u8])  {
+fn hashit(sha: usize, a: &[u8],n: usize,b: Option<&[u8]>,pad: usize,w: &mut [u8])  {
 	let mut r:[u8;64]=[0;64];
 	if sha==SHA256 {
 		let mut h=HASH256::new();

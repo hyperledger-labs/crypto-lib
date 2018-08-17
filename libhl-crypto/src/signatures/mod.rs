@@ -48,20 +48,8 @@ pub trait PublicKey {
     fn verify(&self, message: &[u8], signature: &[u8]) -> Result<bool, CryptoError>;
 }
 
-fn safe_array_compare(a: &[u8], b: &[u8]) -> bool {
-    let mut i = a.len();
-    let mut gt = 0u8;
-    let mut eq = 1u8;
-    let mut x1: u16;
-    let mut x2: u16;
-    while i != 0 {
-        i -= 1;
-        x1 = a[i].into();
-        x2 = b[i].into();
-        gt |= ((x2 - x1) >> 8u16) as u8 & eq;
-        eq &= (((x2 ^ x1) - 1u16) >> 8u16) as u8;
-    }
-    (gt + gt + eq) - 1 == 0
+fn array_compare(a: &[u8], b: &[u8]) -> bool {
+    a.iter().enumerate().all(|(i, v)| *v == b[i])
 }
 
 fn bin2hex(b: &[u8]) -> String {
