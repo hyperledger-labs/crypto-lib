@@ -18,6 +18,8 @@ serialization = ["serde", "serde_json", "serde_derive"]
 
 [dependencies]
 amcl = { version = "0.1.2",  optional = true, default-features = false, features = ["BN254"]}
+amcl_3 = { path = "../amcl" }
+arrayref = "0.3.4"
 int_traits = { version = "0.1.1", optional = true }
 libc = "0.2.33"
 log = "0.3.8"
@@ -26,8 +28,11 @@ sha2 = "0.7.1"
 sha3 = "0.7.3"
 time = "0.1.36"
 env_logger = "0.4.3"
-openssl = { version = "0.9.21", optional = true }
+openssl = { version = "0.10.11", optional = true }
 serde = { version = "1.0",  optional = true}
 serde_json = { version = "1.0",  optional = true}
 serde_derive = { version = "1.0",  optional = true}
 lazy_static = "1.0"
+
+[dev-dependencies]
+secp256k1 = "0.10.0"

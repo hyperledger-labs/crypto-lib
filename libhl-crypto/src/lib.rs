@@ -1,4 +1,7 @@
 extern crate amcl;
+extern crate amcl_3;
+#[macro_use]
+extern crate arrayref;
 extern crate env_logger;
 #[macro_use]
 extern crate log;
@@ -53,3 +56,8 @@ pub mod pair;
 
 #[macro_use]
 extern crate lazy_static;
+
+pub mod signatures;
+
+#[cfg(test)]
+extern crate secp256k1;
