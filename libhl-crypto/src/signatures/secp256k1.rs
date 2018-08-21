@@ -48,7 +48,7 @@ impl EcdsaSecp256K1Sha256PublicKey {
         bin2hex(&self.as_uncompressed_slice()[..])
     }
 
-    pub fn from_slice(data: &[u8; PUBLIC_KEY_SIZE]) -> Result<EcdsaSecp256K1Sha256PublicKey, CryptoError> {
+    pub fn from_slice(data: &[u8]) -> Result<EcdsaSecp256K1Sha256PublicKey, CryptoError> {
         if ecdh::public_key_validate(&data[..]) == 0 {
             let mut value = [0u8; PUBLIC_KEY_SIZE];
             array_copy!(data, value);
@@ -60,34 +60,27 @@ impl EcdsaSecp256K1Sha256PublicKey {
 
     pub fn from_hex(data: &str) -> Result<EcdsaSecp256K1Sha256PublicKey, CryptoError> {
         let bin = hex2bin(data)?;
-        if bin.len() != PUBLIC_KEY_SIZE {
-            Err(CryptoError::ParseError("Invalid public key".to_string()))
-        } else {
-            let mut bytes = [0u8; PUBLIC_KEY_SIZE];
-            array_copy!(bin, bytes);
-            EcdsaSecp256K1Sha256PublicKey::from_slice(&bytes)
-        }
+        EcdsaSecp256K1Sha256PublicKey::from_slice(&bin.as_slice())
     }
 
-    pub fn from_uncompressed_slice(data: &[u8; PUBLIC_UNCOMPRESSED_KEY_SIZE]) -> Result<EcdsaSecp256K1Sha256PublicKey, CryptoError> {
-        if ecdh::public_key_validate(&data[..]) == 0 {
-            let mut compressed = [0u8; PUBLIC_KEY_SIZE];
-            ecp::ECP::frombytes(&data[..]).tobytes(&mut compressed, true);
-            Ok(EcdsaSecp256K1Sha256PublicKey{ value: compressed })
-        } else {
+    pub fn from_uncompressed_slice(data: &[u8]) -> Result<EcdsaSecp256K1Sha256PublicKey, CryptoError> {
+        if data.len() != PUBLIC_UNCOMPRESSED_KEY_SIZE {
             Err(CryptoError::ParseError("Invalid public key".to_string()))
+        }
+        else {
+            if ecdh::public_key_validate(&data[..]) == 0 {
+                let mut compressed = [0u8; PUBLIC_KEY_SIZE];
+                ecp::ECP::frombytes(&data[..]).tobytes(&mut compressed, true);
+                Ok(EcdsaSecp256K1Sha256PublicKey { value: compressed })
+            } else {
+                Err(CryptoError::ParseError("Invalid public key".to_string()))
+            }
         }
     }
 
     pub fn from_uncompressed_hex(data: &str) -> Result<EcdsaSecp256K1Sha256PublicKey, CryptoError> {
         let bin = hex2bin(data)?;
-        if bin.len() != PUBLIC_UNCOMPRESSED_KEY_SIZE {
-            Err(CryptoError::ParseError("Invalid public key".to_string()))
-        } else {
-            let mut bytes = [0u8; PUBLIC_UNCOMPRESSED_KEY_SIZE];
-            array_copy!(bin, bytes);
-            EcdsaSecp256K1Sha256PublicKey::from_uncompressed_slice(&bytes)
-        }
+        EcdsaSecp256K1Sha256PublicKey::from_uncompressed_slice(&bin)
     }
 }
 

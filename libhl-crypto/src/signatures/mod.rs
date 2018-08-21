@@ -49,6 +49,7 @@ pub trait PublicKey {
 }
 
 fn array_compare(a: &[u8], b: &[u8]) -> bool {
+    a.len() == b.len() &&
     a.iter().enumerate().all(|(i, v)| *v == b[i])
 }
 
