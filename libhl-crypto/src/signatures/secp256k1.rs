@@ -226,6 +226,25 @@ impl PrivateKey<EcdsaSecp256K1Sha256PublicKey> for EcdsaSecp256K1Sha256PrivateKe
     }
 }
 
+/// Comment from https://docs.rs/crate/secp256k1/0.10.0/source/src/lib.rs
+///
+/// Normalizes a signature to a "low S" form. In ECDSA, signatures are
+/// of the form (r, s) where r and s are numbers lying in some finite
+/// field. The verification equation will pass for (r, s) iff it passes
+/// for (r, -s), so it is possible to ``modify'' signatures in transit
+/// by flipping the sign of s. This does not constitute a forgery since
+/// the signed message still cannot be changed, but for some applications,
+/// changing even the signature itself can be a problem. Such applications
+/// require a "strong signature". It is believed that ECDSA is a strong
+/// signature except for this ambiguity in the sign of s, so to accomodate
+/// these applications libsecp256k1 will only accept signatures for which
+/// s is in the lower half of the field range. This eliminates the
+/// ambiguity.
+///
+/// However, for some systems, signatures with high s-values are considered
+/// valid. (For example, parsing the historic Bitcoin blockchain requires
+/// this.) For these applications we provide this normalization function,
+/// which ensures that the s value lies in the lower half of its range.
 fn normalize_s(s: &mut [u8; 32]) {
     let mut new_s = set_b32(s);
     if is_high(&new_s) {
@@ -235,6 +254,7 @@ fn normalize_s(s: &mut [u8; 32]) {
     }
 }
 
+/// Convert a little-endian byte array to 8 32 bit numbers
 fn set_b32(s: &[u8; 32]) -> [u32; 8] {
     let mut new_s = [0u32; 8];
 
@@ -261,8 +281,8 @@ fn set_b32(s: &[u8; 32]) -> [u32; 8] {
     new_s
 }
 
-/// Convert a scalar to a byte array.
-pub fn get_b32(s: &[u32; 8]) -> [u8; 32] {
+/// Convert 8 32 bit numbers array to a little-endian byte array.
+fn get_b32(s: &[u32; 8]) -> [u8; 32] {
     let mut new_s = [0u8; 32];
     let mut index = 0;
     for i in 0..8 {
