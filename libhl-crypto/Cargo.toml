@@ -16,17 +16,19 @@ path = "bin/test_signatures.rs"
 required-features = ["benchmark"]
 
 [features]
-default = ["bn_openssl", "pair_amcl", "serialization"]
+default = ["bn_openssl", "pair_amcl", "serialization", "native"]
+portable = ["bn_openssl", "pair_amcl", "serialization", "arrayref"]
 bn_openssl = ["openssl", "int_traits"]
 pair_amcl = ["amcl"]
 serialization = ["serde", "serde_json", "serde_derive"]
 benchmark = ["secp256k1", "openssl"]
+native = ["secp256k1", "libsodium-ffi"]
 
 [dependencies]
 amcl = { version = "0.1.2",  optional = true, default-features = false, features = ["BN254"]}
 amcl_3 = { path = "../amcl" }
-arrayref = "0.3.4"
 int_traits = { version = "0.1.1", optional = true }
+arrayref = { version = "0.3.5", optional = true }
 libc = "0.2.33"
 log = "0.3.8"
 rand = "0.3"
@@ -39,7 +41,8 @@ serde = { version = "1.0",  optional = true}
 serde_json = { version = "1.0",  optional = true}
 serde_derive = { version = "1.0",  optional = true}
 lazy_static = "1.0"
-secp256k1 = { version = "0.10.0", optional = true}
+secp256k1 = { version = "0.10.0", optional = true, features = ["rand", "serde"]}
+libsodium-ffi = { version = "0.1.12", optional = true }
 
 [dev-dependencies]
 secp256k1 = "0.10.0"

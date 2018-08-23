@@ -1,6 +1,12 @@
 #[macro_use]
 mod macros;
 pub mod secp256k1;
+//pub mod ed25519;
+
+#[cfg(feature = "native")]
+use libsecp256k1;
+
+use amcl_3::hash256::HASH256;
 
 #[derive(Debug)]
 pub enum CryptoError {
@@ -13,6 +19,20 @@ pub enum CryptoError {
     SigningError(String),
     /// Returned when an error occurs during key generation
     KeyGenError(String),
+}
+
+#[cfg(feature = "native")]
+impl From<libsecp256k1::Error> for CryptoError {
+    fn from(error: libsecp256k1::Error) -> CryptoError {
+        match error {
+            libsecp256k1::Error::IncorrectSignature => CryptoError::ParseError("Incorrect Signature".to_string()),
+            libsecp256k1::Error::InvalidMessage => CryptoError::ParseError("Invalid Message".to_string()),
+            libsecp256k1::Error::InvalidPublicKey => CryptoError::ParseError("Invalid Public Key".to_string()),
+            libsecp256k1::Error::InvalidSignature => CryptoError::ParseError("Invalid Signature".to_string()),
+            libsecp256k1::Error::InvalidSecretKey => CryptoError::ParseError("Invalid Secret Key".to_string()),
+            libsecp256k1::Error::InvalidRecoveryId => CryptoError::ParseError("Invalid Recovery Id".to_string())
+        }
+    }
 }
 
 /// A private key instance.
@@ -30,7 +50,7 @@ pub trait PrivateKey<T: Sized + PublicKey> {
     /// Produce the public key for the given private key.
     /// # Returns
     /// * `public_key` - the public key for the given private key
-    fn get_public_key(&self) -> Result<T, CryptoError>;
+    fn get_public_key(&self) -> T;
 }
 
 /// A public key instance.
@@ -46,6 +66,12 @@ pub trait PublicKey {
     /// * `boolean` - True if `message` this public key is associated with the signature,
     ///               False otherwise
     fn verify(&self, message: &[u8], signature: &[u8]) -> Result<bool, CryptoError>;
+}
+
+pub fn sha256(data: &[u8]) -> [u8; 32] {
+    let mut h=HASH256::new();
+    h.process_array(data);
+    h.hash()
 }
 
 fn array_compare(a: &[u8], b: &[u8]) -> bool {

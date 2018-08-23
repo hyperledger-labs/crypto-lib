@@ -1,5 +1,6 @@
 extern crate amcl;
 extern crate amcl_3;
+#[cfg(feature = "portable")]
 #[macro_use]
 extern crate arrayref;
 extern crate env_logger;
@@ -8,6 +9,8 @@ extern crate log;
 extern crate rand;
 extern crate sha2;
 extern crate sha3;
+#[cfg(feature = "native")]
+extern crate libsodium_ffi;
 
 // To use macros from util inside of other modules it must me loaded first.
 #[macro_use]
@@ -57,7 +60,7 @@ pub mod pair;
 #[macro_use]
 extern crate lazy_static;
 
-pub mod signatures;
+#[cfg(any(test, feature = "native"))]
+extern crate secp256k1 as libsecp256k1;
 
-#[cfg(test)]
-extern crate secp256k1;
+pub mod signatures;
