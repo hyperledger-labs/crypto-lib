@@ -9,8 +9,14 @@ extern crate log;
 extern crate rand;
 extern crate sha2;
 extern crate sha3;
-#[cfg(feature = "native")]
+#[cfg(any(test, feature = "native"))]
 extern crate libsodium_ffi;
+#[cfg(any(test, all(feature = "native", not(feature = "portable"))))]
+extern crate secp256k1 as libsecp256k1;
+#[cfg(any(test, all(feature = "portable", not(feature = "native"))))]
+extern crate rustlibsecp256k1;
+#[cfg(feature = "portable")]
+extern crate crypto as rcrypto;
 
 // To use macros from util inside of other modules it must me loaded first.
 #[macro_use]
@@ -59,8 +65,5 @@ pub mod pair;
 
 #[macro_use]
 extern crate lazy_static;
-
-#[cfg(any(test, feature = "native"))]
-extern crate secp256k1 as libsecp256k1;
 
 pub mod signatures;

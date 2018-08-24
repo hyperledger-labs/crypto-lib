@@ -5,3 +5,12 @@ macro_rules! array_copy {
         }
     };
 }
+
+#[cfg(feature = "portable")]
+macro_rules! zero {
+    ($a:ident) => {
+        for i in 0..$a.len() {
+            $a[i] = 0;
+        }
+    };
+}

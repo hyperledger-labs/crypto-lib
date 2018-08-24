@@ -1,12 +1,13 @@
 #[macro_use]
 mod macros;
 pub mod secp256k1;
-//pub mod ed25519;
+pub mod ed25519;
 
 #[cfg(feature = "native")]
 use libsecp256k1;
 
 use amcl_3::hash256::HASH256;
+use amcl_3::hash512::HASH512;
 
 #[derive(Debug)]
 pub enum CryptoError {
@@ -70,6 +71,12 @@ pub trait PublicKey {
 
 pub fn sha256(data: &[u8]) -> [u8; 32] {
     let mut h=HASH256::new();
+    h.process_array(data);
+    h.hash()
+}
+
+pub fn sha512(data: &[u8]) -> [u8; 64] {
+    let mut h=HASH512::new();
     h.process_array(data);
     h.hash()
 }

@@ -1,4 +1,3 @@
-extern crate rand;
 extern crate hl_crypto;
 extern crate secp256k1;
 extern crate openssl;
