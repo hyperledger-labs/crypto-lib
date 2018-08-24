@@ -8,7 +8,6 @@ pub mod rand;
 pub mod sha3;
 pub mod nhs;
 
-pub mod ed25519;
 pub mod nist256;
 pub mod goldilocks;
 pub mod nist384;
