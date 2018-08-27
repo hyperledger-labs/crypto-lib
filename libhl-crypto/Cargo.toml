@@ -55,3 +55,4 @@ rustlibsecp256k1 = { path = "../rustlibsecp256k1", optional = true }
 [dev-dependencies]
 secp256k1 = "0.10.0"
 libsodium-ffi = "0.1.12"
+rustlibsecp256k1 = { path = "../rustlibsecp256k1" }

@@ -36,39 +36,38 @@ impl From<libsecp256k1::Error> for CryptoError {
     }
 }
 
+pub enum KeyPairOption {
+    UseSeed(Vec<u8>),
+    FromSecretKey(PrivateKey)
+}
+
+pub trait SignatureScheme {
+    fn new() -> Self;
+    fn keypair(&self, options: Option<KeyPairOption>) -> Result<(PublicKey, PrivateKey), CryptoError>;
+    fn sign(&self, message: &[u8], sk: &PrivateKey) -> Result<Vec<u8>, CryptoError>;
+    fn verify(&self, message: &[u8], signature: &[u8], pk: &PublicKey) -> Result<bool, CryptoError>;
+    fn signature_size() -> usize;
+    fn private_key_size() -> usize;
+    fn public_key_size() -> usize;
+}
+
 /// A private key instance.
 /// The underlying content is dependent on implementation.
-pub trait PrivateKey<T: Sized + PublicKey> {
-    /// Returns the algorithm name used for this private key.
-    fn get_algorithm_name(&self) -> &str;
-    /// Sign a message
-    /// and return a byte array of the resulting signature.
-    /// # Arguments
-    /// * `message`- the message bytes to sign
-    /// # Returns
-    /// * `signature` - The signature in a binary array
-    fn sign(&self, message: &[u8]) -> Result<Vec<u8>, CryptoError>;
-    /// Produce the public key for the given private key.
-    /// # Returns
-    /// * `public_key` - the public key for the given private key
-    fn get_public_key(&self) -> T;
-}
+pub struct PrivateKey(Vec<u8>);
+impl_bytearray!(PrivateKey);
 
-/// A public key instance.
-/// The underlying content is dependent on implementation.
-pub trait PublicKey {
-    /// Returns the algorithm name used for this public key.
-    fn get_algorithm_name(&self) -> &str;
-    /// Verify a message with a signature
-    /// # Arguments
-    /// * `message` - the message bytes that were signed
-    /// * `signature` - the signature returned from *sign*
-    /// # Returns
-    /// * `boolean` - True if `message` this public key is associated with the signature,
-    ///               False otherwise
-    fn verify(&self, message: &[u8], signature: &[u8]) -> Result<bool, CryptoError>;
-}
+pub struct PublicKey(Vec<u8>);
+impl_bytearray!(PublicKey);
 
+pub trait EcdsaPublicKeyHandler {
+    /// Returns the compressed bytes
+    fn serialize(&self, pk: &PublicKey) -> Vec<u8>;
+    /// Returns the uncompressed bytes
+    fn serialize_uncompressed(&self, pk: &PublicKey) -> Vec<u8>;
+    /// Read raw bytes into key struct. Can be either compressed or uncompressed
+    fn parse(&self, data: &[u8]) -> Result<PublicKey, CryptoError>;
+    fn public_key_uncompressed_size() -> usize;
+}
 pub fn sha256(data: &[u8]) -> [u8; 32] {
     let mut h=HASH256::new();
     h.process_array(data);
@@ -81,19 +80,14 @@ pub fn sha512(data: &[u8]) -> [u8; 64] {
     h.hash()
 }
 
-fn array_compare(a: &[u8], b: &[u8]) -> bool {
-    a.len() == b.len() &&
-    a.iter().enumerate().all(|(i, v)| *v == b[i])
-}
-
-fn bin2hex(b: &[u8]) -> String {
+pub fn bin2hex(b: &[u8]) -> String {
     b.iter()
      .map(|b| format!("{:02x}", b))
      .collect::<Vec<_>>()
      .join("")
 }
 
-fn hex2bin(s: &str) -> Result<Vec<u8>, CryptoError> {
+pub fn hex2bin(s: &str) -> Result<Vec<u8>, CryptoError> {
     if s.len() % 2 != 0 {
         return Err(CryptoError::ParseError("Invalid string".to_string()))
     }
@@ -111,4 +105,13 @@ fn hex2bin(s: &str) -> Result<Vec<u8>, CryptoError> {
     }).collect();
 
     return Ok(decoded);
+}
+
+fn get_u32(n: &[u8]) -> u32 {
+    let mut res = 0u32;
+    for i in 0..4 {
+        res <<= 8;
+        res |= n[i] as u32;
+    }
+    res
 }

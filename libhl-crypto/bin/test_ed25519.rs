@@ -1,8 +1,8 @@
 extern crate hl_crypto;
 extern crate libsodium_ffi as ffi;
 
-use hl_crypto::signatures::ed25519::Ed25519PrivateKey;
-use hl_crypto::signatures::{PublicKey, PrivateKey};
+use hl_crypto::signatures::ed25519::Ed25519Sha512;
+use hl_crypto::signatures::SignatureScheme;
 
 use std::io;
 use std::io::Write;
@@ -14,13 +14,13 @@ fn main() {
     println!("Running 3 tests for ed25519 signing of {} messages", trials);
     print!("This library - ");
     io::stdout().flush().unwrap();
-    let s = Ed25519PrivateKey::new().unwrap();
-    let p = s.get_public_key();
+    let scheme = Ed25519Sha512::new();
+    let (p, s) = scheme.keypair(None).unwrap();
     let mut now = Instant::now();
 
     for _ in 0..trials {
-        let signature = s.sign(&letters[..]).unwrap();
-        p.verify(&letters[..], &signature).unwrap();
+        let signature = scheme.sign(&letters[..], &s).unwrap();
+        scheme.verify(&letters[..], &signature, &p).unwrap();
     }
     let elapsed = now.elapsed();
     println!("{}.{:03}", elapsed.as_secs(), elapsed.subsec_millis());
@@ -36,12 +36,12 @@ fn main() {
                                               0u64 as *mut u64,
                                               letters.as_ptr() as *const u8,
                                               letters.len() as u64,
-                                              s.as_slice().as_ptr() as *const u8);
+                                              s.as_ptr() as *const u8);
 
             ffi::crypto_sign_ed25519_verify_detached(signature.as_ptr() as *const u8,
                                                      letters.as_ptr() as *const u8,
                                                      letters.len() as u64,
-                                                     p.as_slice().as_ptr() as *const u8)
+                                                     p.as_ptr() as *const u8)
         };
     }
 

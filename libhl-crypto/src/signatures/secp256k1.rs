@@ -1,9 +1,5 @@
 use super::*;
 
-use std::fmt;
-
-use amcl_3::secp256k1::ecdh;
-
 use rand::os::OsRng;
 
 pub const PRIVATE_KEY_SIZE: usize = 32;
@@ -13,585 +9,313 @@ pub const SIGNATURE_POINT_SIZE: usize = 32;
 pub const SIGNATURE_SIZE: usize = 64;
 pub const ALGORITHM_NAME: &str = "ECDSA_SECP256K1_SHA256";
 
-pub fn new_keys() -> Result<(EcdsaSecp256K1Sha256PrivateKey, EcdsaSecp256K1Sha256PublicKey), CryptoError> {
-    let s = EcdsaSecp256K1Sha256PrivateKey::new()?;
-    let p = s.get_public_key();
-    Ok((s, p))
-}
+pub struct EcdsaSecp256k1Sha256(ecdsa_secp256k1sha256::EcdsaSecp256k1Sha256Impl);
 
-pub struct EcdsaSecp256K1Sha256PublicKey(ecdsa_secp256k1_sha256::EcdsaSecp256K1Sha256PublicKeyImpl);
-
-impl EcdsaSecp256K1Sha256PublicKey {
-    pub fn as_slice(&self) -> [u8; PUBLIC_KEY_SIZE] { self.0.as_slice() }
-    pub fn as_hex(&self) -> String { self.0.as_hex() }
-    pub fn as_uncompressed_slice(&self) -> [u8; PUBLIC_UNCOMPRESSED_KEY_SIZE] { self.0.as_uncompressed_slice() }
-    pub fn as_uncompressed_hex(&self) -> String { self.0.as_uncompressed_hex() }
-    pub fn from_slice(data: &[u8]) -> Result<EcdsaSecp256K1Sha256PublicKey, CryptoError> {
-        let value = ecdsa_secp256k1_sha256::EcdsaSecp256K1Sha256PublicKeyImpl::from_slice(data)?;
-        Ok(EcdsaSecp256K1Sha256PublicKey(value))
-    }
-    pub fn from_hex(data: &str) -> Result<EcdsaSecp256K1Sha256PublicKey, CryptoError> {
-        let value = ecdsa_secp256k1_sha256::EcdsaSecp256K1Sha256PublicKeyImpl::from_hex(data)?;
-        Ok(EcdsaSecp256K1Sha256PublicKey(value))
+impl EcdsaSecp256k1Sha256 {
+    pub fn normalize_s(&self, signature: &mut [u8]) -> Result<(), CryptoError> {
+        self.0.normalize_s(signature)
     }
 }
 
-impl Clone for EcdsaSecp256K1Sha256PublicKey {
-    fn clone(&self) -> EcdsaSecp256K1Sha256PublicKey {
-        EcdsaSecp256K1Sha256PublicKey(self.0.clone())
+impl SignatureScheme for EcdsaSecp256k1Sha256 {
+    fn new() -> EcdsaSecp256k1Sha256 {
+        EcdsaSecp256k1Sha256(ecdsa_secp256k1sha256::EcdsaSecp256k1Sha256Impl::new())
     }
+    fn keypair(&self, option: Option<KeyPairOption>) -> Result<(PublicKey, PrivateKey), CryptoError> {
+        self.0.keypair(option)
+    }
+    fn sign(&self, message: &[u8], sk: &PrivateKey) -> Result<Vec<u8>, CryptoError> {
+        self.0.sign(message, sk)
+    }
+    fn verify(&self, message: &[u8], signature: &[u8], pk: &PublicKey) -> Result<bool, CryptoError> {
+        self.0.verify(message, signature, pk)
+    }
+    fn signature_size() -> usize { SIGNATURE_SIZE }
+    fn private_key_size() -> usize { PRIVATE_KEY_SIZE }
+    fn public_key_size() -> usize { PUBLIC_KEY_SIZE }
 }
 
-impl fmt::Display for EcdsaSecp256K1Sha256PublicKey {
-    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        write!(formatter, "EcdsaSecp256K1Sha256PublicKey {{ {} }}", self.0)
+impl EcdsaPublicKeyHandler for EcdsaSecp256k1Sha256 {
+    /// Returns the compressed bytes
+    fn serialize(&self, pk: &PublicKey) -> Vec<u8> {
+        self.0.serialize(pk)
     }
-}
-
-impl fmt::Debug for EcdsaSecp256K1Sha256PublicKey {
-    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        write!(formatter, "EcdsaSecp256K1Sha256PublicKey {{ {} }}", self.0)
+    /// Returns the uncompressed bytes
+    fn serialize_uncompressed(&self, pk: &PublicKey) -> Vec<u8> {
+        self.0.serialize_uncompressed(pk)
     }
-}
-
-impl Eq for EcdsaSecp256K1Sha256PublicKey {}
-
-impl PartialEq for EcdsaSecp256K1Sha256PublicKey {
-    fn eq(&self, other: &EcdsaSecp256K1Sha256PublicKey) -> bool {
-        self.0 == other.0
+    /// Read raw bytes into key struct. Can be either compressed or uncompressed
+    fn parse(&self, data: &[u8]) -> Result<PublicKey, CryptoError> {
+        self.0.parse(data)
     }
-}
-
-impl PublicKey for EcdsaSecp256K1Sha256PublicKey {
-    fn get_algorithm_name(&self) -> &str { ALGORITHM_NAME }
-
-    fn verify(&self, message: &[u8], signature: &[u8]) -> Result<bool, CryptoError> {
-        self.0.verify(message, signature)
-    }
-}
-
-pub struct EcdsaSecp256K1Sha256PrivateKey(ecdsa_secp256k1_sha256::EcdsaSecp256K1Sha256PrivateKeyImpl);
-
-impl EcdsaSecp256K1Sha256PrivateKey {
-    pub fn new() -> Result<EcdsaSecp256K1Sha256PrivateKey, CryptoError> {
-        let value = ecdsa_secp256k1_sha256::EcdsaSecp256K1Sha256PrivateKeyImpl::new()?;
-        Ok(EcdsaSecp256K1Sha256PrivateKey(value))
-    }
-
-    pub fn as_slice(&self) -> [u8; PRIVATE_KEY_SIZE] { self.0.as_slice() }
-
-    pub fn as_hex(&self) -> String { self.0.as_hex() }
-
-    pub fn from_slice(data: &[u8]) -> Result<EcdsaSecp256K1Sha256PrivateKey, CryptoError> {
-        let value = ecdsa_secp256k1_sha256::EcdsaSecp256K1Sha256PrivateKeyImpl::from_slice(data)?;
-        Ok(EcdsaSecp256K1Sha256PrivateKey(value))
-    }
-
-    pub fn from_hex(data: &str) -> Result<EcdsaSecp256K1Sha256PrivateKey, CryptoError> {
-        let value = ecdsa_secp256k1_sha256::EcdsaSecp256K1Sha256PrivateKeyImpl::from_hex(data)?;
-        Ok(EcdsaSecp256K1Sha256PrivateKey(value))
-    }
-}
-
-impl Clone for EcdsaSecp256K1Sha256PrivateKey {
-    fn clone(&self) -> EcdsaSecp256K1Sha256PrivateKey {
-        EcdsaSecp256K1Sha256PrivateKey(self.0.clone())
-    }
-}
-
-impl fmt::Display for EcdsaSecp256K1Sha256PrivateKey {
-    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        write!(formatter, "EcdsaSecp256K1Sha256PrivateKey {{ {} }}", self.0)
-    }
-}
-
-impl fmt::Debug for EcdsaSecp256K1Sha256PrivateKey {
-    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        write!(formatter, "EcdsaSecp256K1Sha256PrivateKey {{ {} }}", self.0)
-    }
-}
-
-impl Eq for EcdsaSecp256K1Sha256PrivateKey {}
-
-impl PartialEq for EcdsaSecp256K1Sha256PrivateKey {
-    fn eq(&self, other: &EcdsaSecp256K1Sha256PrivateKey) -> bool {
-        self.0 == other.0
-    }
-}
-
-impl PrivateKey<EcdsaSecp256K1Sha256PublicKey> for EcdsaSecp256K1Sha256PrivateKey {
-    fn get_algorithm_name(&self) -> &str { ALGORITHM_NAME }
-
-    fn sign(&self, message: &[u8]) -> Result<Vec<u8>, CryptoError> {
-        self.0.sign(message)
-    }
-
-    fn get_public_key(&self) -> EcdsaSecp256K1Sha256PublicKey {
-        let value = self.0.get_public_key();
-        EcdsaSecp256K1Sha256PublicKey(value)
-    }
+    fn public_key_uncompressed_size() -> usize { PUBLIC_UNCOMPRESSED_KEY_SIZE }
 }
 
 #[cfg(all(feature = "native", not(feature = "portable")))]
-mod ecdsa_secp256k1_sha256 {
+mod ecdsa_secp256k1sha256 {
     use super::*;
     use libsecp256k1;
 
-    pub struct EcdsaSecp256K1Sha256PublicKeyImpl {
-        context: libsecp256k1::Secp256k1<libsecp256k1::VerifyOnly>,
-        pk: libsecp256k1::key::PublicKey
-    }
+    use rand::{ChaChaRng, SeedableRng};
 
-    impl EcdsaSecp256K1Sha256PublicKeyImpl {
-        pub fn as_slice(&self) -> [u8; PUBLIC_KEY_SIZE] {
-            self.pk.serialize()
+    pub struct EcdsaSecp256k1Sha256Impl(libsecp256k1::Secp256k1<libsecp256k1::All>);
+
+    impl EcdsaSecp256k1Sha256Impl {
+        pub fn serialize(&self, pk: &PublicKey) -> Vec<u8> {
+            let pk = libsecp256k1::key::PublicKey::from_slice(&self.0, &pk[..]).unwrap();
+            pk.serialize().to_vec()
         }
-        pub fn as_hex(&self) -> String {
-            bin2hex(&self.as_slice()[..])
+        pub fn serialize_uncompressed(&self, pk: &PublicKey) -> Vec<u8> {
+            let pk = libsecp256k1::key::PublicKey::from_slice(&self.0, &pk[..]).unwrap();
+            pk.serialize_uncompressed().to_vec()
         }
-        pub fn as_uncompressed_slice(&self) -> [u8; PUBLIC_UNCOMPRESSED_KEY_SIZE] {
-            self.pk.serialize_uncompressed()
+        pub fn parse(&self, data: &[u8]) -> Result<PublicKey, CryptoError> {
+            let res = libsecp256k1::key::PublicKey::from_slice(&self.0, data)?;
+            let pk = PublicKey(res.serialize().to_vec());
+            Ok(pk)
         }
-        pub fn as_uncompressed_hex(&self) -> String {
-            bin2hex(&self.as_uncompressed_slice()[..])
+        pub fn new() -> EcdsaSecp256k1Sha256Impl {
+            EcdsaSecp256k1Sha256Impl(libsecp256k1::Secp256k1::new())
         }
-        pub fn from_slice(data: &[u8]) -> Result<EcdsaSecp256K1Sha256PublicKeyImpl, CryptoError> {
-            if ecdh::public_key_validate(&data[..]) == 0 {
-                let context = libsecp256k1::Secp256k1::verification_only();
-                let pk = libsecp256k1::key::PublicKey::from_slice(&context, &data)?;
-                Ok(EcdsaSecp256K1Sha256PublicKeyImpl { context, pk })
-            } else {
-                Err(CryptoError::ParseError("Invalid public key".to_string()))
-            }
+        pub fn keypair(&self, option: Option<KeyPairOption>) -> Result<(PublicKey, PrivateKey), CryptoError> {
+            let sk = match option {
+                    Some(o) => {
+                        match o {
+                            KeyPairOption::UseSeed(seed) => {
+                                let mut rng = ChaChaRng::from_seed(seed.chunks(4).map(get_u32).collect::<Vec<u32>>().as_slice());
+                                libsecp256k1::key::SecretKey::new(&self.0, &mut rng)
+                            },
+                            KeyPairOption::FromSecretKey(s) => libsecp256k1::key::SecretKey::from_slice(&self.0, &s[..])?
+                        }
+                    },
+                    None => {
+                        let mut rng = OsRng::new().map_err(|err| CryptoError::KeyGenError(format!("{}", err)))?;
+                        libsecp256k1::key::SecretKey::new(&self.0, &mut rng)
+                    }
+                };
+            let pk = libsecp256k1::key::PublicKey::from_secret_key(&self.0, &sk);
+            Ok((PublicKey(pk.serialize().to_vec()), PrivateKey(sk[..].to_vec())))
         }
-        pub fn from_hex(data: &str) -> Result<EcdsaSecp256K1Sha256PublicKeyImpl, CryptoError> {
-            let bytes = hex2bin(data)?;
-            EcdsaSecp256K1Sha256PublicKeyImpl::from_slice(bytes.as_slice())
-        }
-        pub fn verify(&self, message: &[u8], signature: &[u8]) -> Result<bool, CryptoError> {
+        pub fn sign(&self, message: &[u8], sk: &PrivateKey) -> Result<Vec<u8>, CryptoError> {
             let hash = sha256(message);
             let msg = libsecp256k1::Message::from_slice(&hash[..])?;
-            let sig = libsecp256k1::Signature::from_compact(&self.context, signature)?;
-            let res = self.context.verify(&msg, &sig, &self.pk);
+            let s = libsecp256k1::key::SecretKey::from_slice(&self.0, &sk[..])?;
+            let sig = self.0.sign(&msg, &s);
+            Ok(sig.serialize_compact(&self.0).to_vec())
+        }
+        pub fn verify(&self, message: &[u8], signature: &[u8], pk: &PublicKey) -> Result<bool, CryptoError> {
+            let hash = sha256(message);
+            let msg = libsecp256k1::Message::from_slice(&hash[..])?;
+            let p = libsecp256k1::PublicKey::from_slice(&self.0, &pk[..])?;
+            let sig = libsecp256k1::Signature::from_compact(&self.0, signature)?;
+            let res = self.0.verify(&msg, &sig, &p);
             match res {
                 Ok(()) => Ok(true),
                 Err(libsecp256k1::Error::IncorrectSignature) => Ok(false),
                 Err(err) => Err(CryptoError::from(err))
             }
         }
-    }
-
-    impl Clone for EcdsaSecp256K1Sha256PublicKeyImpl {
-        fn clone(&self) -> EcdsaSecp256K1Sha256PublicKeyImpl {
-            EcdsaSecp256K1Sha256PublicKeyImpl {
-                context: libsecp256k1::Secp256k1::verification_only(),
-                pk: self.pk.clone()
-            }
-        }
-    }
-
-    impl fmt::Display for EcdsaSecp256K1Sha256PublicKeyImpl {
-        fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-            write!(formatter, "EcdsaSecp256K1Sha256PublicKeyImpl {{ context: VerifyOnly, pk: {} }}", bin2hex(&self.pk.serialize()))
-        }
-    }
-
-    impl fmt::Debug for EcdsaSecp256K1Sha256PublicKeyImpl {
-        fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-            write!(formatter, "EcdsaSecp256K1Sha256PublicKeyImpl {{ context: VerifyOnly, pk: {} }}", bin2hex(&self.pk.serialize()))
-        }
-    }
-
-    impl Eq for EcdsaSecp256K1Sha256PublicKeyImpl {}
-
-    impl PartialEq for EcdsaSecp256K1Sha256PublicKeyImpl {
-        fn eq(&self, other: &EcdsaSecp256K1Sha256PublicKeyImpl) -> bool {
-            self.pk == other.pk
-        }
-    }
-
-    pub struct EcdsaSecp256K1Sha256PrivateKeyImpl {
-        context: libsecp256k1::Secp256k1<libsecp256k1::SignOnly>,
-        sk: libsecp256k1::key::SecretKey
-    }
-
-    impl EcdsaSecp256K1Sha256PrivateKeyImpl {
-        pub fn new() -> Result<EcdsaSecp256K1Sha256PrivateKeyImpl, CryptoError> {
-            let context = libsecp256k1::Secp256k1::signing_only();
-            let mut rng = OsRng::new().map_err(|err| CryptoError::KeyGenError(format!("{}", err)))?;
-            let sk = libsecp256k1::key::SecretKey::new(&context, &mut rng);
-            Ok(EcdsaSecp256K1Sha256PrivateKeyImpl { context, sk })
-        }
-        pub fn as_slice(&self) -> [u8; PRIVATE_KEY_SIZE] {
-            let mut res = [0u8; PRIVATE_KEY_SIZE];
-            array_copy!(self.sk[..], res);
-            res
-        }
-        pub fn as_hex(&self) -> String { bin2hex(&self.as_slice()[..]) }
-        pub fn from_slice(data: &[u8]) -> Result<EcdsaSecp256K1Sha256PrivateKeyImpl, CryptoError> {
-            let context = libsecp256k1::Secp256k1::signing_only();
-            let sk = libsecp256k1::SecretKey::from_slice(&context, data)?;
-            Ok(EcdsaSecp256K1Sha256PrivateKeyImpl { context, sk })
-        }
-        pub fn from_hex(data: &str) -> Result<EcdsaSecp256K1Sha256PrivateKeyImpl, CryptoError> {
-            let bytes = hex2bin(data)?;
-            EcdsaSecp256K1Sha256PrivateKeyImpl::from_slice(bytes.as_slice())
-        }
-        pub fn sign(&self, message: &[u8]) -> Result<Vec<u8>, CryptoError> {
-            let hash = sha256(message);
-            let msg = libsecp256k1::Message::from_slice(&hash[..])?;
-            let sig = self.context.sign(&msg, &self.sk);
-            Ok(sig.serialize_compact(&self.context).to_vec())
-        }
-        pub fn get_public_key(&self) -> EcdsaSecp256K1Sha256PublicKeyImpl {
-            let pk = libsecp256k1::key::PublicKey::from_secret_key(&self.context, &self.sk);
-            let context = libsecp256k1::Secp256k1::verification_only();
-            EcdsaSecp256K1Sha256PublicKeyImpl { context, pk }
-        }
-    }
-
-    impl Clone for EcdsaSecp256K1Sha256PrivateKeyImpl {
-        fn clone(&self) -> EcdsaSecp256K1Sha256PrivateKeyImpl {
-            EcdsaSecp256K1Sha256PrivateKeyImpl {
-                context: libsecp256k1::Secp256k1::signing_only(),
-                sk: self.sk.clone()
-            }
-        }
-    }
-
-    impl fmt::Display for EcdsaSecp256K1Sha256PrivateKeyImpl {
-        fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-            write!(formatter, "EcdsaSecp256K1Sha256PrivateKeyImpl {{ context: SignOnly, sk: {} }}", bin2hex(&self.sk[..]))
-        }
-    }
-
-    impl fmt::Debug for EcdsaSecp256K1Sha256PrivateKeyImpl {
-        fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-            write!(formatter, "EcdsaSecp256K1Sha256PrivateKeyImpl {{ context: SignOnly, sk: {} }}", bin2hex(&self.sk[..]))
-        }
-    }
-
-    impl Eq for EcdsaSecp256K1Sha256PrivateKeyImpl {}
-
-    impl PartialEq for EcdsaSecp256K1Sha256PrivateKeyImpl {
-        fn eq(&self, other: &EcdsaSecp256K1Sha256PrivateKeyImpl) -> bool {
-            self.sk == other.sk
+        pub fn normalize_s(&self, signature: &mut [u8]) -> Result<(), CryptoError> {
+            let mut sig = libsecp256k1::Signature::from_compact(&self.0, signature)?;
+            sig.normalize_s(&self.0);
+            let compact = sig.serialize_compact(&self.0);
+            array_copy!(compact, signature);
+            Ok(())
         }
     }
 }
 
 #[cfg(all(feature = "portable", not(feature = "native")))]
-mod ecdsa_secp256k1_sha256 {
+mod ecdsa_secp256k1sha256 {
     use super::*;
-
-    use rand::Rng;
-
-//    use amcl_3::rand::RAND;
-    use amcl_3::secp256k1::ecp;
-
     use rustlibsecp256k1;
 
-//    const HALF_CURVE_ORDER: [u32; 8] = [0x681B20A0, 0xDFE92F46, 0x57A4501D, 0x5D576E73, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x7FFFFFFF];
-//    const CURVE_C: [u32; 5] = [!HALF_CURVE_ORDER[0] + 1, !HALF_CURVE_ORDER[1], !HALF_CURVE_ORDER[2], !HALF_CURVE_ORDER[3], 1u32];
-//    const CURVE_ORDER: [u32; 8] = [0xD0364141, 0xBFD25E8C, 0xAF48A03B, 0xBAAEDCE6, 0xFFFFFFFE, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF];
+    use rand::{ChaChaRng, SeedableRng, Rng};
 
-    pub struct EcdsaSecp256K1Sha256PublicKeyImpl([u8; PUBLIC_KEY_SIZE]);
+    use amcl_3::secp256k1::{ecp, ecdh};
 
-    impl EcdsaSecp256K1Sha256PublicKeyImpl {
-        pub fn as_slice(&self) -> [u8; PUBLIC_KEY_SIZE] { self.0 }
-        pub fn as_hex(&self) -> String {
-            bin2hex(&self.as_slice()[..])
+    pub struct EcdsaSecp256k1Sha256Impl{}
+
+    impl EcdsaSecp256k1Sha256Impl {
+        pub fn serialize(&self, pk: &PublicKey) -> Vec<u8> {
+            let mut compressed = [0u8; PUBLIC_KEY_SIZE];
+            ecp::ECP::frombytes(&pk[..]).tobytes(&mut compressed, true);
+            compressed.to_vec()
         }
-        pub fn as_uncompressed_slice(&self) -> [u8; PUBLIC_UNCOMPRESSED_KEY_SIZE] {
+        pub fn serialize_uncompressed(&self, pk: &PublicKey) -> Vec<u8> {
             let mut uncompressed = [0u8; PUBLIC_UNCOMPRESSED_KEY_SIZE];
-            ecp::ECP::frombytes(&self.0[..]).tobytes(&mut uncompressed, false);
-            uncompressed
+            ecp::ECP::frombytes(&pk[..]).tobytes(&mut uncompressed, false);
+            uncompressed.to_vec()
         }
-        pub fn as_uncompressed_hex(&self) -> String {
-            bin2hex(&self.as_uncompressed_slice()[..])
+        pub fn parse(&self, data: &[u8]) -> Result<PublicKey, CryptoError> {
+            match data.len() {
+                PUBLIC_KEY_SIZE => Ok(PublicKey(data.to_vec())),
+                PUBLIC_UNCOMPRESSED_KEY_SIZE => {
+                    let mut compressed = [0u8; PUBLIC_KEY_SIZE];
+                    ecp::ECP::frombytes(data).tobytes(&mut compressed, true);
+                    Ok(PublicKey(compressed.to_vec()))
+                }
+                _ => Err(CryptoError::ParseError("Invalid key length".to_string()))
+            }
         }
-        pub fn from_slice(data: &[u8]) -> Result<EcdsaSecp256K1Sha256PublicKeyImpl, CryptoError> {
-            if ecdh::public_key_validate(data) == 0 {
-                let mut value = [0u8; PUBLIC_KEY_SIZE];
-                match data.len() {
-                    PUBLIC_KEY_SIZE => array_copy!(data, value),
-                    PUBLIC_UNCOMPRESSED_KEY_SIZE => ecp::ECP::frombytes(data).tobytes(&mut value, true),
-                    _ => Err(CryptoError::ParseError("Invalid public key".to_string()))?
+        pub fn new() -> EcdsaSecp256k1Sha256Impl {
+            EcdsaSecp256k1Sha256Impl{}
+        }
+        pub fn keypair(&self, option: Option<KeyPairOption>) -> Result<(PublicKey, PrivateKey), CryptoError> {
+            let mut sk = [0u8; PRIVATE_KEY_SIZE];
+            match option {
+                    Some(o) => {
+                        match o {
+                            KeyPairOption::UseSeed(seed) => {
+                                let mut rng = ChaChaRng::from_seed(seed.chunks(4).map(get_u32).collect::<Vec<u32>>().as_slice());
+                                rng.fill_bytes(&mut sk);
+                            },
+                            KeyPairOption::FromSecretKey(s) => array_copy!(s, sk)
+                        }
+                    },
+                    None => {
+                        let mut rng = OsRng::new().map_err(|err| CryptoError::KeyGenError(format!("{}", err)))?;
+                        rng.fill_bytes(&mut sk);
+                    }
                 };
-//                ecp::ECP::frombytes(data).tobytes(&mut value, true);
-                Ok(EcdsaSecp256K1Sha256PublicKeyImpl(value))
-            } else {
-                Err(CryptoError::ParseError("Invalid public key".to_string()))
-            }
+            let mut pk = [0u8; PUBLIC_KEY_SIZE]; //Compressed
+            ecdh::key_pair_generate(None, &mut sk, &mut pk);
+            Ok((PublicKey(pk.to_vec()), PrivateKey(sk.to_vec())))
         }
-        pub fn from_hex(data: &str) -> Result<EcdsaSecp256K1Sha256PublicKeyImpl, CryptoError> {
-            let bytes = hex2bin(data)?;
-            EcdsaSecp256K1Sha256PublicKeyImpl::from_slice(bytes.as_slice())
-        }
-        pub fn verify(&self, message: &[u8], signature: &[u8]) -> Result<bool, CryptoError> {
-            if signature.len() != SIGNATURE_SIZE {
-                Err(CryptoError::ParseError("Invalid signature length".to_string()))?
-            }
-//            let r = array_ref!(signature, 0, SIGNATURE_POINT_SIZE);
-//            let s = array_ref!(signature, SIGNATURE_POINT_SIZE, SIGNATURE_POINT_SIZE);
-//            let result = ecdh::ecpvp_dsa(ecdh::SHA256, &self.0[..], &message, &r[..], &s[..]);
-//
-//            Ok(result == 0)
+        pub fn sign(&self, message: &[u8], sk: &PrivateKey) -> Result<Vec<u8>, CryptoError> {
             let hash = sha256(message);
-            match rustlibsecp256k1::verify(&hash, array_ref!(signature, 0, 64), &self.as_uncompressed_slice()) {
-                Ok(b) => Ok(b),
-                Err(_) => Err(CryptoError::SigningError("Incorrect signature".to_string()))
-            }
-        }
-    }
-
-    impl Clone for EcdsaSecp256K1Sha256PublicKeyImpl {
-        fn clone(&self) -> EcdsaSecp256K1Sha256PublicKeyImpl {
-            let mut value = [0u8; PUBLIC_KEY_SIZE];
-            array_copy!(&self.0[..], value);
-            EcdsaSecp256K1Sha256PublicKeyImpl(value)
-        }
-    }
-
-    impl fmt::Display for EcdsaSecp256K1Sha256PublicKeyImpl {
-        fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-            write!(formatter, "EcdsaSecp256K1Sha256PublicKeyImpl {{ {} }}", bin2hex(&self.0[..]))
-        }
-    }
-
-    impl fmt::Debug for EcdsaSecp256K1Sha256PublicKeyImpl {
-        fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-            write!(formatter, "EcdsaSecp256K1Sha256PublicKeyImpl {{ {} }}", bin2hex(&self.0[..]))
-        }
-    }
-
-    impl Eq for EcdsaSecp256K1Sha256PublicKeyImpl {}
-
-    impl PartialEq for EcdsaSecp256K1Sha256PublicKeyImpl {
-        fn eq(&self, other: &EcdsaSecp256K1Sha256PublicKeyImpl) -> bool {
-            array_compare(&self.0[..], &other.0[..])
-        }
-    }
-
-    pub struct EcdsaSecp256K1Sha256PrivateKeyImpl([u8; PRIVATE_KEY_SIZE]);
-
-    impl EcdsaSecp256K1Sha256PrivateKeyImpl {
-        pub fn new() -> Result<EcdsaSecp256K1Sha256PrivateKeyImpl, CryptoError> {
-            let mut rng = OsRng::new().map_err(|err| CryptoError::KeyGenError(format!("{}", err)))?;
-            let mut value = [0u8; PRIVATE_KEY_SIZE];
-            rng.fill_bytes(&mut value);
-            Ok(EcdsaSecp256K1Sha256PrivateKeyImpl(value))
-        }
-        pub fn as_slice(&self) -> [u8; PRIVATE_KEY_SIZE] { self.0 }
-        pub fn as_hex(&self) -> String { bin2hex(&self.as_slice()[..]) }
-        pub fn from_slice(data: &[u8]) -> Result<EcdsaSecp256K1Sha256PrivateKeyImpl, CryptoError> {
-            if data.len() == PRIVATE_KEY_SIZE {
-                let mut value = [0u8; PRIVATE_KEY_SIZE];
-                array_copy!(data, value);
-                Ok(EcdsaSecp256K1Sha256PrivateKeyImpl(value))
-            } else {
-                Err(CryptoError::KeyGenError(format!("Expected {} bytes for a private key", PRIVATE_KEY_SIZE)))
-            }
-        }
-        pub fn from_hex(data: &str) -> Result<EcdsaSecp256K1Sha256PrivateKeyImpl, CryptoError> {
-            let bytes = hex2bin(data)?;
-            EcdsaSecp256K1Sha256PrivateKeyImpl::from_slice(bytes.as_slice())
-        }
-        pub fn sign(&self, message: &[u8]) -> Result<Vec<u8>, CryptoError> {
-//            let mut r = [0u8; SIGNATURE_POINT_SIZE];
-//            let mut s = [0u8; SIGNATURE_POINT_SIZE];
-//            let mut pool = RAND::new();
-//            let mut seed = [0u8; 128];
-//            get_random_seed(&mut seed)?;
-//            pool.seed(seed.len(), &seed);
-//            ecdh::ecpsp_dsa(ecdh::SHA256, &mut pool, &self.0[..], &message, &mut r, &mut s);
-//
-//            Use the "low s" form to be compatible with libsecp256k1
-//            normalize_s(&mut s);
-//            let mut signature = Vec::new();
-//            signature.extend_from_slice(&r[..]);
-//            signature.extend_from_slice(&s[..]);
-
-//            Ok(signature)
-            let hash = sha256(message);
-            match rustlibsecp256k1::sign(&hash, &self.0) {
+            match rustlibsecp256k1::sign(&hash, array_ref!(sk[..], 0, PRIVATE_KEY_SIZE)) {
                 Ok(sig) => Ok(sig.to_vec()),
                 Err(_) => Err(CryptoError::SigningError("".to_string()))
             }
         }
-        pub fn get_public_key(&self) -> EcdsaSecp256K1Sha256PublicKeyImpl {
-            let mut w = [0u8; PUBLIC_KEY_SIZE]; //Compressed
-            let mut s = [0u8; PRIVATE_KEY_SIZE];
-            array_copy!(&self.0[..], s);
-            ecdh::key_pair_generate(None, &mut s, &mut w);
-            zero!(s);
-            EcdsaSecp256K1Sha256PublicKeyImpl(w)
+        pub fn verify(&self, message: &[u8], signature: &[u8], pk: &PublicKey) -> Result<bool, CryptoError> {
+            let hash = sha256(message);
+            let uncompressed_pk = self.serialize_uncompressed(&pk);
+            match rustlibsecp256k1::verify(&hash,
+                                           array_ref!(signature, 0, SIGNATURE_SIZE),
+                                           array_ref!(uncompressed_pk.as_slice(), 0, PUBLIC_UNCOMPRESSED_KEY_SIZE)) {
+                Ok(b) => Ok(b),
+                Err(_) => Err(CryptoError::SigningError("Incorrect signature".to_string()))
+            }
+        }
+        pub fn normalize_s(&self, signature: &mut [u8]) -> Result<(), CryptoError> {
+            let mut new_s = set_b32(array_ref!(signature, 32, 32));
+            if is_high(&new_s) {
+                negate(&mut new_s);
+                let s_tmp = get_b32(&new_s);
+                array_copy!(s_tmp, 0, signature, 32, 32);
+            }
+            Ok(())
         }
     }
 
-    impl Clone for EcdsaSecp256K1Sha256PrivateKeyImpl {
-        fn clone(&self) -> EcdsaSecp256K1Sha256PrivateKeyImpl {
-            let mut value = [0u8; PRIVATE_KEY_SIZE];
-            array_copy!(self.0, value);
-            EcdsaSecp256K1Sha256PrivateKeyImpl(value)
-        }
+    const HALF_CURVE_ORDER: [u32; 8] = [0x681B20A0, 0xDFE92F46, 0x57A4501D, 0x5D576E73, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x7FFFFFFF];
+    const CURVE_C: [u32; 5] = [!HALF_CURVE_ORDER[0] + 1, !HALF_CURVE_ORDER[1], !HALF_CURVE_ORDER[2], !HALF_CURVE_ORDER[3], 1u32];
+    const CURVE_ORDER: [u32; 8] = [0xD0364141, 0xBFD25E8C, 0xAF48A03B, 0xBAAEDCE6, 0xFFFFFFFE, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF];
+
+    /// Convert a little-endian byte array to 8 32 bit numbers
+    fn set_b32(s: &[u8; 32]) -> [u32; 8] {
+        let mut new_s = [0u32; 8];
+
+        new_s[0] = get_u32(&s[28..32]);
+        new_s[1] = get_u32(&s[24..28]);
+        new_s[2] = get_u32(&s[20..24]);
+        new_s[3] = get_u32(&s[16..20]);
+        new_s[4] = get_u32(&s[12..16]);
+        new_s[5] = get_u32(&s[8..12]);
+        new_s[6] = get_u32(&s[4..8]);
+        new_s[7] = get_u32(&s[0..4]);
+
+        let overflow = check_overflow(&new_s);
+        reduce(&mut new_s, overflow);
+        new_s
     }
 
-    impl fmt::Display for EcdsaSecp256K1Sha256PrivateKeyImpl {
-        fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-            write!(formatter, "EcdsaSecp256K1Sha256PrivateKeyImpl {{ {} }}", bin2hex(&self.0[..]))
+    /// Convert 8 32 bit numbers array to a little-endian byte array.
+    fn get_b32(s: &[u32; 8]) -> [u8; 32] {
+        let mut new_s = [0u8; 32];
+        let mut index = 0;
+        for i in 0..8 {
+            let mut shift = 24;
+            for _ in 0..4 {
+                new_s[index] = (s[7 - i] >> shift) as u8;
+                index += 1;
+                shift -= 8;
+            }
         }
+        new_s
     }
 
-    impl fmt::Debug for EcdsaSecp256K1Sha256PrivateKeyImpl {
-        fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-            write!(formatter, "EcdsaSecp256K1Sha256PrivateKeyImpl {{ {} }}", bin2hex(&self.0[..]))
-        }
+    /// Check whether a scalar is higher than the group order divided
+    /// by 2.
+    fn is_high(s: &[u32; 8]) -> bool {
+        let mut yes: bool = false;
+        let mut no: bool = false;
+        no = no || (s[7] < HALF_CURVE_ORDER[7]);
+        yes = yes || ((s[7] > HALF_CURVE_ORDER[7]) & !no);
+        no = no || ((s[6] < HALF_CURVE_ORDER[6]) & !yes); /* No need for a > check. */
+        no = no || ((s[5] < HALF_CURVE_ORDER[5]) & !yes); /* No need for a > check. */
+        no = no || ((s[4] < HALF_CURVE_ORDER[4]) & !yes); /* No need for a > check. */
+        no = no || ((s[3] < HALF_CURVE_ORDER[3]) & !yes);
+        yes = yes || ((s[3] > HALF_CURVE_ORDER[3]) && !no);
+        no = no || ((s[2] < HALF_CURVE_ORDER[2]) && !yes);
+        yes = yes || ((s[2] > HALF_CURVE_ORDER[2]) && !no);
+        no = no || ((s[1] < HALF_CURVE_ORDER[1]) && !yes);
+        yes = yes || ((s[1] > HALF_CURVE_ORDER[1]) && !no);
+        yes = yes || ((s[0] >= HALF_CURVE_ORDER[0]) && !no);
+        yes
     }
 
-    impl Eq for EcdsaSecp256K1Sha256PrivateKeyImpl {}
+    fn negate(s: &mut [u32; 8]) {
+        let nonzero = if is_zero(s) { 0u64 } else { 0xFFFFFFFFu64 };
+        let mut t = (!s[0]) as u64 + (CURVE_ORDER[0] + 1) as u64;
 
-    impl PartialEq for EcdsaSecp256K1Sha256PrivateKeyImpl {
-        fn eq(&self, other: &EcdsaSecp256K1Sha256PrivateKeyImpl) -> bool {
-            array_compare(&self.0[..], &other.0[..])
+        for i in 0..7 {
+            s[i] = (t & nonzero) as u32;
+            t >>= 32;
+            t += (!s[i + 1]) as u64 + CURVE_ORDER[i + 1] as u64;
         }
+        s[7] = (t & nonzero) as u32;
     }
 
-//    fn normalize_s(s: &mut [u8; 32]) {
-//        let mut new_s = set_b32(s);
-//        if is_high(&new_s) {
-//            negate(&mut new_s);
-//            let s_tmp = get_b32(&new_s);
-//            array_copy!(s_tmp, s);
-//        }
-//    }
-//
-//    /// Convert a little-endian byte array to 8 32 bit numbers
-//    fn set_b32(s: &[u8; 32]) -> [u32; 8] {
-//        let mut new_s = [0u32; 8];
-//
-//        fn get_u32(n: &[u8]) -> u32 {
-//            let mut res = 0u32;
-//            for i in 0..4 {
-//                res <<= 8;
-//                res |= n[i] as u32;
-//            }
-//            res
-//        }
-//
-//        new_s[0] = get_u32(&s[28..32]);
-//        new_s[1] = get_u32(&s[24..28]);
-//        new_s[2] = get_u32(&s[20..24]);
-//        new_s[3] = get_u32(&s[16..20]);
-//        new_s[4] = get_u32(&s[12..16]);
-//        new_s[5] = get_u32(&s[8..12]);
-//        new_s[6] = get_u32(&s[4..8]);
-//        new_s[7] = get_u32(&s[0..4]);
-//
-//        let overflow = check_overflow(&new_s);
-//        reduce(&mut new_s, overflow);
-//        new_s
-//    }
-//
-//    /// Convert 8 32 bit numbers array to a little-endian byte array.
-//    fn get_b32(s: &[u32; 8]) -> [u8; 32] {
-//        let mut new_s = [0u8; 32];
-//        let mut index = 0;
-//        for i in 0..8 {
-//            let mut shift = 24;
-//            for _ in 0..4 {
-//                new_s[index] = (s[7 - i] >> shift) as u8;
-//                index += 1;
-//                shift -= 8;
-//            }
-//        }
-//        new_s
-//    }
-//
-//    /// Check whether a scalar is higher than the group order divided
-///// by 2.
-//    fn is_high(s: &[u32; 8]) -> bool {
-//        let mut yes: bool = false;
-//        let mut no: bool = false;
-//        no = no || (s[7] < HALF_CURVE_ORDER[7]);
-//        yes = yes || ((s[7] > HALF_CURVE_ORDER[7]) & !no);
-//        no = no || ((s[6] < HALF_CURVE_ORDER[6]) & !yes); /* No need for a > check. */
-//        no = no || ((s[5] < HALF_CURVE_ORDER[5]) & !yes); /* No need for a > check. */
-//        no = no || ((s[4] < HALF_CURVE_ORDER[4]) & !yes); /* No need for a > check. */
-//        no = no || ((s[3] < HALF_CURVE_ORDER[3]) & !yes);
-//        yes = yes || ((s[3] > HALF_CURVE_ORDER[3]) && !no);
-//        no = no || ((s[2] < HALF_CURVE_ORDER[2]) && !yes);
-//        yes = yes || ((s[2] > HALF_CURVE_ORDER[2]) && !no);
-//        no = no || ((s[1] < HALF_CURVE_ORDER[1]) && !yes);
-//        yes = yes || ((s[1] > HALF_CURVE_ORDER[1]) && !no);
-//        yes = yes || ((s[0] >= HALF_CURVE_ORDER[0]) && !no);
-//        yes
-//    }
-//
-//    fn negate(s: &mut [u32; 8]) {
-//        let nonzero = if is_zero(s) { 0u64 } else { 0xFFFFFFFFu64 };
-//        let mut t = (!s[0]) as u64 + (CURVE_ORDER[0] + 1) as u64;
-//
-//        for i in 0..7 {
-//            s[i] = (t & nonzero) as u32;
-//            t >>= 32;
-//            t += (!s[i + 1]) as u64 + CURVE_ORDER[i + 1] as u64;
-//        }
-//        s[7] = (t & nonzero) as u32;
-//    }
-//
-//    fn is_zero(s: &[u32; 8]) -> bool {
-//        s.iter().all(|b| *b == 0)
-//    }
-//
-//    fn check_overflow(s: &[u32; 8]) -> bool {
-//        let mut yes: bool = false;
-//        let mut no: bool = false;
-//        for i in 0..3 {
-//            no = no || (s[7 - i] < CURVE_ORDER[7 - i])
-//        }
-//        for i in 0..4 {
-//            no = no || (s[4 - i] < CURVE_ORDER[4 - i]);
-//            yes = yes || ((s[4 - i] > CURVE_ORDER[4 - i]) && !no);
-//        }
-//        yes = yes || ((s[0] >= CURVE_ORDER[0]) && !no);
-//        yes
-//    }
-//
-//    fn reduce(s: &mut [u32; 8], overflow: bool) {
-//        let o = if overflow { 1u64 } else { 0u64 };
-//        let mut t = 0u64;
-//
-//        for i in 0..5 {
-//            t += (s[i] as u64) + o * (CURVE_C[i] as u64);
-//            s[i] = (t & 0xFFFFFFFF) as u32;
-//            t >>= 32;
-//        }
-//
-//        for i in 5..7 {
-//            t += s[i] as u64;
-//            s[i] = (t & 0xFFFFFFFF) as u32;
-//            t >>= 32;
-//        }
-//
-//        t += s[7] as u64;
-//        s[7] = (t & 0xFFFFFFFF) as u32;
-//    }
-//
-//    #[cfg(not(test))]
-//    fn get_random_seed(seed: &mut [u8]) -> Result<(), CryptoError> {
-//        let mut rng = OsRng::new().map_err(|err| CryptoError::KeyGenError(format!("{}", err)))?;
-//        rng.fill_bytes(seed);
-//        Ok(())
-//    }
-//
-//    #[cfg(test)]
-//    fn get_random_seed(seed: &mut [u8]) -> Result<(), CryptoError> {
-//    for i in 0..seed.len() {
-//        seed[i] = i as u8;
-//    }
-//    Ok(())
-//}
+    fn is_zero(s: &[u32; 8]) -> bool {
+        s.iter().all(|b| *b == 0)
+    }
+
+    fn check_overflow(s: &[u32; 8]) -> bool {
+        let mut yes: bool = false;
+        let mut no: bool = false;
+        for i in 0..3 {
+            no = no || (s[7 - i] < CURVE_ORDER[7 - i])
+        }
+        for i in 0..4 {
+            no = no || (s[4 - i] < CURVE_ORDER[4 - i]);
+            yes = yes || ((s[4 - i] > CURVE_ORDER[4 - i]) && !no);
+        }
+        yes = yes || ((s[0] >= CURVE_ORDER[0]) && !no);
+        yes
+    }
+
+    fn reduce(s: &mut [u32; 8], overflow: bool) {
+        let o = if overflow { 1u64 } else { 0u64 };
+        let mut t = 0u64;
+
+        for i in 0..5 {
+            t += (s[i] as u64) + o * (CURVE_C[i] as u64);
+            s[i] = (t & 0xFFFFFFFF) as u32;
+            t >>= 32;
+        }
+
+        for i in 5..7 {
+            t += s[i] as u64;
+            s[i] = (t & 0xFFFFFFFF) as u32;
+            t >>= 32;
+        }
+
+        t += s[7] as u64;
+        s[7] = (t & 0xFFFFFFFF) as u32;
+    }
 }
 
 #[cfg(test)]
@@ -611,50 +335,54 @@ mod test {
     #[test]
     #[ignore]
     fn create_new_keys() {
-        let (s, p) = new_keys().unwrap();
+        let scheme = EcdsaSecp256k1Sha256::new();
+        let (s, p) = scheme.keypair(None).unwrap();
 
         println!("{:?}", s);
         println!("{:?}", p);
-        assert_eq!(s.get_algorithm_name(), ALGORITHM_NAME);
-        assert_eq!(p.get_algorithm_name(), ALGORITHM_NAME);
     }
 
     #[test]
     fn secp256k1_load_keys() {
-        assert!(EcdsaSecp256K1Sha256PrivateKey::from_hex(PRIVATE_KEY).is_ok());
-        assert!(EcdsaSecp256K1Sha256PrivateKey::from_hex("1293857b11d").is_err());
-        assert!(EcdsaSecp256K1Sha256PublicKey::from_hex(PUBLIC_KEY).is_ok());
-        assert!(EcdsaSecp256K1Sha256PublicKey::from_hex("1qaz2wsx3edc4rfv5tgb6yhn7ujm8ik,9ol.0p;/0987654321").is_err());
+        let scheme = EcdsaSecp256k1Sha256::new();
+        let sres = scheme.keypair(Some(KeyPairOption::FromSecretKey(PrivateKey(hex2bin(PRIVATE_KEY).unwrap()))));
+        assert!(sres.is_ok());
+        let pres = scheme.parse(hex2bin(PUBLIC_KEY).unwrap().as_slice());
+        assert!(pres.is_ok());
+        let (p1, _) = sres.unwrap();
+        assert_eq!(p1, pres.unwrap());
     }
 
     #[test]
     fn secp256k1_compatibility() {
-        let s = EcdsaSecp256K1Sha256PrivateKey::from_hex(PRIVATE_KEY).unwrap();
-        let p = EcdsaSecp256K1Sha256PublicKey::from_hex(PUBLIC_KEY).unwrap();
+        let scheme = EcdsaSecp256k1Sha256::new();
+        let (p, s) = scheme.keypair(Some(KeyPairOption::FromSecretKey(PrivateKey(hex2bin(PRIVATE_KEY).unwrap())))).unwrap();
 
-        let p_u = EcdsaSecp256K1Sha256PublicKey::from_slice(&p.as_uncompressed_slice());
+        let p_u = scheme.parse(&scheme.serialize_uncompressed(&p));
         assert!(p_u.is_ok());
         let p_u = p_u.unwrap();
         assert_eq!(p_u, p);
 
         let context = libsecp256k1::Secp256k1::new();
-        let sk = libsecp256k1::key::SecretKey::from_slice(&context, &s.as_slice());
+        let sk = libsecp256k1::key::SecretKey::from_slice(&context, &s[..]);
         assert!(sk.is_ok());
-        let pk = libsecp256k1::key::PublicKey::from_slice(&context, &p.as_slice()[..]);
+        let pk = libsecp256k1::key::PublicKey::from_slice(&context, &p[..]);
         assert!(pk.is_ok());
-        let pk = libsecp256k1::key::PublicKey::from_slice(&context, &p.as_uncompressed_slice()[..]);
+        let pk = libsecp256k1::key::PublicKey::from_slice(&context, &scheme.serialize_uncompressed(&p)[..]);
         assert!(pk.is_ok());
 
         let openssl_group = EcGroup::from_curve_name(Nid::SECP256K1).unwrap();
         let mut ctx = BigNumContext::new().unwrap();
-        let openssl_point = EcPoint::from_bytes(&openssl_group, &p.as_uncompressed_slice()[..], &mut ctx);
+        let openssl_point = EcPoint::from_bytes(&openssl_group, &scheme.serialize_uncompressed(&p)[..], &mut ctx);
         assert!(openssl_point.is_ok());
     }
 
     #[test]
     fn secp256k1_verify() {
-        let p = EcdsaSecp256K1Sha256PublicKey::from_hex(PUBLIC_KEY).unwrap();
-        let result = p.verify(&MESSAGE_1, hex2bin(SIGNATURE_1).unwrap().as_slice());
+        let scheme = EcdsaSecp256k1Sha256::new();
+        let p = PublicKey(hex2bin(PUBLIC_KEY).unwrap());
+
+        let result = scheme.verify(&MESSAGE_1, hex2bin(SIGNATURE_1).unwrap().as_slice(), &p);
         assert!(result.is_ok());
         assert!(result.unwrap());
 
@@ -687,21 +415,16 @@ mod test {
 
     #[test]
     fn secp256k1_sign() {
-        let s = EcdsaSecp256K1Sha256PrivateKey::from_hex(PRIVATE_KEY).unwrap();
-        let p = EcdsaSecp256K1Sha256PublicKey::from_hex(PUBLIC_KEY).unwrap();
+        let scheme = EcdsaSecp256k1Sha256::new();
+        let (p, s) = scheme.keypair(Some(KeyPairOption::FromSecretKey(PrivateKey(hex2bin(PRIVATE_KEY).unwrap())))).unwrap();
 
-        match s.sign(MESSAGE_1) {
+        match scheme.sign(MESSAGE_1, &s) {
             Ok(sig) => {
-                let result = p.verify(&MESSAGE_1, &sig);
+                let result = scheme.verify(&MESSAGE_1, &sig, &p);
                 assert!(result.is_ok());
                 assert!(result.unwrap());
 
                 assert_eq!(sig.len(), SIGNATURE_SIZE);
-
-                //This will only match if the PRNG is seeded. We can seed it for amcl, but not libsecp256k1
-//                if cfg!(feature = "portable") {
-//                    assert_eq!(bin2hex(sig.as_slice()), SIGNATURE_1);
-//                }
 
                 //Check if libsecp256k1 signs the message and this module still can verify it
                 //And that private keys can sign with other libraries
@@ -713,14 +436,14 @@ mod test {
                 let msg = libsecp256k1::Message::from_slice(&hash[..]).unwrap();
                 let sig_1 = context.sign(&msg, &sk).serialize_compact(&context);
 
-                let result = p.verify(&MESSAGE_1, &sig_1);
+                let result = scheme.verify(&MESSAGE_1, &sig_1, &p);
 
                 assert!(result.is_ok());
                 assert!(result.unwrap());
 
                 let openssl_group = EcGroup::from_curve_name(Nid::SECP256K1).unwrap();
                 let mut ctx = BigNumContext::new().unwrap();
-                let openssl_point = EcPoint::from_bytes(&openssl_group, &p.as_uncompressed_slice()[..], &mut ctx).unwrap();
+                let openssl_point = EcPoint::from_bytes(&openssl_group, &scheme.serialize_uncompressed(&p)[..], &mut ctx).unwrap();
                 let openssl_pkey = EcKey::from_public_key(&openssl_group, &openssl_point).unwrap();
                 let openssl_skey = EcKey::from_private_components(&openssl_group, &BigNum::from_hex_str(PRIVATE_KEY).unwrap(), &openssl_point).unwrap();
 
@@ -731,14 +454,17 @@ mod test {
                 let mut temp_sig = Vec::new();
                 temp_sig.extend(openssl_sig.r().to_vec());
                 temp_sig.extend(openssl_sig.s().to_vec());
-                let result = p.verify(&MESSAGE_1, temp_sig.as_slice());
+
+                //libsecp256k1 expects normalized "s"'s.
+                scheme.normalize_s(temp_sig.as_mut_slice()).unwrap();
+                let result = scheme.verify(&MESSAGE_1, temp_sig.as_slice(), &p);
                 assert!(result.is_ok());
                 assert!(result.unwrap());
 
-                let (s, p) = new_keys().unwrap();
-                match s.sign(&MESSAGE_1) {
+                let (p, s) = scheme.keypair(None).unwrap();
+                match scheme.sign(&MESSAGE_1, &s) {
                     Ok(signed) => {
-                        let result = p.verify(&MESSAGE_1, &signed);
+                        let result = scheme.verify(&MESSAGE_1, &signed, &p);
                         assert!(result.is_ok());
                         assert!(result.unwrap());
                     },
@@ -748,6 +474,4 @@ mod test {
             Err(e) => assert!(false, e)
         }
     }
-
-
 }
