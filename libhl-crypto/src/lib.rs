@@ -1,10 +1,28 @@
+/// Portable try to solely use Rust and no external C libraries.
+/// This is considered less secure only because the Rust code may not have had a
+/// security audited yet.
+///
+/// Native uses external C libraries that have had a security audit performed
+
 extern crate amcl;
+extern crate amcl_3;
+#[cfg(feature = "portable")]
+#[macro_use]
+extern crate arrayref;
 extern crate env_logger;
 #[macro_use]
 extern crate log;
 extern crate rand;
 extern crate sha2;
 extern crate sha3;
+#[cfg(any(test, all(feature = "native", not(feature = "portable"))))]
+extern crate libsodium_ffi;
+#[cfg(any(test, all(feature = "portable", not(feature = "native"))))]
+extern crate crypto as rcrypto;
+#[cfg(any(test, all(feature = "native", not(feature = "portable"))))]
+extern crate secp256k1 as libsecp256k1;
+#[cfg(any(test, all(feature = "portable", not(feature = "native"))))]
+extern crate rustlibsecp256k1;
 
 // To use macros from util inside of other modules it must me loaded first.
 #[macro_use]
@@ -53,3 +71,5 @@ pub mod pair;
 
 #[macro_use]
 extern crate lazy_static;
+
+pub mod signatures;

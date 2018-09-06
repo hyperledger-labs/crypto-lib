@@ -10,15 +10,31 @@ name = "hl_crypto"
 path = "src/lib.rs"
 crate-type = ["staticlib","rlib", "dylib"]
 
+[[bin]]
+name = "test_secp256k1"
+path = "bin/test_secp256k1.rs"
+required-features = ["benchmarksecp256k1"]
+
+[[bin]]
+name = "test_ed25519"
+path = "bin/test_ed25519.rs"
+required-features = ["benchmarked25519"]
+
 [features]
-default = ["bn_openssl", "pair_amcl", "serialization"]
+default = ["bn_openssl", "pair_amcl", "serialization", "native"]
+portable = ["bn_openssl", "pair_amcl", "serialization", "arrayref", "rust-crypto", "rustlibsecp256k1"]
+native = ["secp256k1", "libsodium-ffi"]
 bn_openssl = ["openssl", "int_traits"]
 pair_amcl = ["amcl"]
 serialization = ["serde", "serde_json", "serde_derive"]
+benchmarksecp256k1 = ["secp256k1", "openssl"]
+benchmarked25519 = ["libsodium-ffi"]
 
 [dependencies]
 amcl = { version = "0.1.2",  optional = true, default-features = false, features = ["BN254"]}
+amcl_3 = { path = "../amcl" }
 int_traits = { version = "0.1.1", optional = true }
+arrayref = { version = "0.3.5", optional = true }
 libc = "0.2.33"
 log = "0.3.8"
 rand = "0.3"
@@ -26,8 +42,17 @@ sha2 = "0.7.1"
 sha3 = "0.7.3"
 time = "0.1.36"
 env_logger = "0.4.3"
-openssl = { version = "0.9.21", optional = true }
+openssl = { version = "0.10.11", optional = true }
 serde = { version = "1.0",  optional = true}
 serde_json = { version = "1.0",  optional = true}
 serde_derive = { version = "1.0",  optional = true}
 lazy_static = "1.0"
+secp256k1 = { version = "0.10.0", optional = true, features = ["rand", "serde"]}
+libsodium-ffi = { version = "0.1.12", optional = true }
+rust-crypto = { version = "0.2.36", optional = true }
+rustlibsecp256k1 = { path = "../rustlibsecp256k1", optional = true }
+
+[dev-dependencies]
+secp256k1 = "0.10.0"
+libsodium-ffi = "0.1.12"
+rustlibsecp256k1 = { path = "../rustlibsecp256k1" }
