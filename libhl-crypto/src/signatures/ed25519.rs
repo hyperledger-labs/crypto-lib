@@ -162,7 +162,7 @@ mod test {
     #[test]
     #[ignore]
     fn create_new_keys() {
-        let scheme = Ed25519Sha2512::new();
+        let scheme = Ed25519Sha512::new();
         let (p, s) = scheme.keypair(None).unwrap();
 
         println!("{:?}", s);
@@ -171,7 +171,7 @@ mod test {
 
     #[test]
     fn ed25519_load_keys() {
-        let scheme = Ed25519Sha2512::new();
+        let scheme = Ed25519Sha512::new();
         let sres = scheme.keypair(Some(KeyPairOption::FromSecretKey(PrivateKey(hex2bin(PRIVATE_KEY).unwrap()))));
         assert!(sres.is_ok());
         let (p1, s1) = sres.unwrap();
@@ -181,7 +181,7 @@ mod test {
 
     #[test]
     fn ed25519_verify() {
-        let scheme = Ed25519Sha2512::new();
+        let scheme = Ed25519Sha512::new();
         let (p, _) = scheme.keypair(Some(KeyPairOption::FromSecretKey(PrivateKey(hex2bin(PRIVATE_KEY).unwrap())))).unwrap();
 
         let result = scheme.verify(&MESSAGE_1, hex2bin(SIGNATURE_1).unwrap().as_slice(), &p);
@@ -201,7 +201,7 @@ mod test {
 
     #[test]
     fn ed25519_sign() {
-        let scheme = Ed25519Sha2512::new();
+        let scheme = Ed25519Sha512::new();
         let (p, s) = scheme.keypair(Some(KeyPairOption::FromSecretKey(PrivateKey(hex2bin(PRIVATE_KEY).unwrap())))).unwrap();
 
         match scheme.sign(&MESSAGE_1, &s) {
