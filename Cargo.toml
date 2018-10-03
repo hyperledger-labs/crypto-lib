@@ -1,0 +1,6 @@
+[workspace]
+members = [
+  "amcl",
+  "libhl-crypto",
+  "rustlibsecp256k1",
+]
