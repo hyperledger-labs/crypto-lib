@@ -32,7 +32,7 @@ benchmarked25519 = ["libsodium-ffi"]
 
 [dependencies]
 amcl = { version = "0.1.2",  optional = true, default-features = false, features = ["BN254"]}
-amcl_3 = { path = "../amcl" }
+amcl_3 = { path = "amcl" }
 int_traits = { version = "0.1.1", optional = true }
 arrayref = { version = "0.3.5", optional = true }
 libc = "0.2.33"
@@ -50,9 +50,9 @@ lazy_static = "1.0"
 secp256k1 = { version = "0.10.0", optional = true, features = ["rand", "serde"]}
 libsodium-ffi = { version = "0.1.12", optional = true }
 rust-crypto = { version = "0.2.36", optional = true }
-rustlibsecp256k1 = { path = "../rustlibsecp256k1", optional = true }
+rustlibsecp256k1 = { path = "rustlibsecp256k1", optional = true }
 
 [dev-dependencies]
 secp256k1 = "0.10.0"
 libsodium-ffi = "0.1.12"
-rustlibsecp256k1 = { path = "../rustlibsecp256k1" }
+rustlibsecp256k1 = { path = "rustlibsecp256k1" }
