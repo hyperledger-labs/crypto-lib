@@ -17,11 +17,11 @@ extern crate sha2;
 extern crate sha3;
 #[cfg(any(test, all(feature = "native", not(feature = "portable"))))]
 extern crate libsodium_ffi;
-#[cfg(any(test, all(feature = "portable", not(feature = "native"))))]
+#[cfg(all(feature = "portable", not(feature = "native")))]
 extern crate crypto as rcrypto;
 #[cfg(any(test, all(feature = "native", not(feature = "portable"))))]
 extern crate secp256k1 as libsecp256k1;
-#[cfg(any(test, all(feature = "portable", not(feature = "native"))))]
+#[cfg(all(feature = "portable", not(feature = "native")))]
 extern crate rustlibsecp256k1;
 
 // To use macros from util inside of other modules it must me loaded first.
