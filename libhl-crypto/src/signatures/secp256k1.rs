@@ -169,6 +169,7 @@ mod ecdsa_secp256k1sha256 {
                             KeyPairOption::UseSeed(seed) => {
                                 let mut rng = ChaChaRng::from_seed(seed.chunks(4).map(get_u32).collect::<Vec<u32>>().as_slice());
                                 rng.fill_bytes(&mut sk);
+                                sk = sha256(&sk[..]);
                             },
                             KeyPairOption::FromSecretKey(s) => array_copy!(s, sk)
                         }
@@ -176,6 +177,7 @@ mod ecdsa_secp256k1sha256 {
                     None => {
                         let mut rng = OsRng::new().map_err(|err| CryptoError::KeyGenError(format!("{}", err)))?;
                         rng.fill_bytes(&mut sk);
+                        sk = sha256(&sk[..]);
                     }
                 };
             let mut pk = [0u8; PUBLIC_KEY_SIZE]; //Compressed
