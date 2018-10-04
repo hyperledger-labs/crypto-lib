@@ -172,7 +172,8 @@ mod test {
     #[test]
     fn ed25519_load_keys() {
         let scheme = Ed25519Sha512::new();
-        let sres = scheme.keypair(Some(KeyPairOption::FromSecretKey(PrivateKey(hex2bin(PRIVATE_KEY).unwrap()))));
+        let secret = PrivateKey(hex2bin(PRIVATE_KEY).unwrap());
+        let sres = scheme.keypair(Some(KeyPairOption::FromSecretKey(&secret)));
         assert!(sres.is_ok());
         let (p1, s1) = sres.unwrap();
         assert_eq!(s1, PrivateKey(hex2bin(PRIVATE_KEY).unwrap()));
@@ -182,7 +183,8 @@ mod test {
     #[test]
     fn ed25519_verify() {
         let scheme = Ed25519Sha512::new();
-        let (p, _) = scheme.keypair(Some(KeyPairOption::FromSecretKey(PrivateKey(hex2bin(PRIVATE_KEY).unwrap())))).unwrap();
+        let secret = PrivateKey(hex2bin(PRIVATE_KEY).unwrap());
+        let (p, _) = scheme.keypair(Some(KeyPairOption::FromSecretKey(&secret))).unwrap();
 
         let result = scheme.verify(&MESSAGE_1, hex2bin(SIGNATURE_1).unwrap().as_slice(), &p);
         assert!(result.is_ok());
@@ -202,7 +204,8 @@ mod test {
     #[test]
     fn ed25519_sign() {
         let scheme = Ed25519Sha512::new();
-        let (p, s) = scheme.keypair(Some(KeyPairOption::FromSecretKey(PrivateKey(hex2bin(PRIVATE_KEY).unwrap())))).unwrap();
+        let secret = PrivateKey(hex2bin(PRIVATE_KEY).unwrap());
+        let (p, s) = scheme.keypair(Some(KeyPairOption::FromSecretKey(&secret))).unwrap();
 
         match scheme.sign(&MESSAGE_1, &s) {
             Ok(sig) => {
@@ -228,6 +231,15 @@ mod test {
                 assert!(result.unwrap());
             },
             Err(e) => assert!(false, e)
+        }
+        let signer = Signer::new(&scheme, &s);
+        match signer.sign(&MESSAGE_1) {
+            Ok(signed) => {
+                let result = scheme.verify(&MESSAGE_1, &signed, &p);
+                assert!(result.is_ok());
+                assert!(result.unwrap());
+            },
+            Err(er) => assert!(false, er)
         }
     }
 }

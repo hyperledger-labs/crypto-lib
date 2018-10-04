@@ -345,7 +345,8 @@ mod test {
     #[test]
     fn secp256k1_load_keys() {
         let scheme = EcdsaSecp256k1Sha256::new();
-        let sres = scheme.keypair(Some(KeyPairOption::FromSecretKey(PrivateKey(hex2bin(PRIVATE_KEY).unwrap()))));
+        let secret = PrivateKey(hex2bin(PRIVATE_KEY).unwrap());
+        let sres = scheme.keypair(Some(KeyPairOption::FromSecretKey(&secret)));
         assert!(sres.is_ok());
         let pres = scheme.parse(hex2bin(PUBLIC_KEY).unwrap().as_slice());
         assert!(pres.is_ok());
@@ -356,7 +357,8 @@ mod test {
     #[test]
     fn secp256k1_compatibility() {
         let scheme = EcdsaSecp256k1Sha256::new();
-        let (p, s) = scheme.keypair(Some(KeyPairOption::FromSecretKey(PrivateKey(hex2bin(PRIVATE_KEY).unwrap())))).unwrap();
+        let secret = PrivateKey(hex2bin(PRIVATE_KEY).unwrap());
+        let (p, s) = scheme.keypair(Some(KeyPairOption::FromSecretKey(&secret))).unwrap();
 
         let p_u = scheme.parse(&scheme.serialize_uncompressed(&p));
         assert!(p_u.is_ok());
@@ -416,7 +418,8 @@ mod test {
     #[test]
     fn secp256k1_sign() {
         let scheme = EcdsaSecp256k1Sha256::new();
-        let (p, s) = scheme.keypair(Some(KeyPairOption::FromSecretKey(PrivateKey(hex2bin(PRIVATE_KEY).unwrap())))).unwrap();
+        let secret = PrivateKey(hex2bin(PRIVATE_KEY).unwrap());
+        let (p, s) = scheme.keypair(Some(KeyPairOption::FromSecretKey(&secret))).unwrap();
 
         match scheme.sign(MESSAGE_1, &s) {
             Ok(sig) => {
@@ -463,6 +466,16 @@ mod test {
 
                 let (p, s) = scheme.keypair(None).unwrap();
                 match scheme.sign(&MESSAGE_1, &s) {
+                    Ok(signed) => {
+                        let result = scheme.verify(&MESSAGE_1, &signed, &p);
+                        assert!(result.is_ok());
+                        assert!(result.unwrap());
+                    },
+                    Err(er) => assert!(false, er)
+                }
+
+                let signer = Signer::new(&scheme, &s);
+                match signer.sign(&MESSAGE_1) {
                     Ok(signed) => {
                         let result = scheme.verify(&MESSAGE_1, &signed, &p);
                         assert!(result.is_ok());

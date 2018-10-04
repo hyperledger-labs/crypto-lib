@@ -36,9 +36,9 @@ impl From<libsecp256k1::Error> for CryptoError {
     }
 }
 
-pub enum KeyPairOption {
+pub enum KeyPairOption<'a> {
     UseSeed(Vec<u8>),
-    FromSecretKey(PrivateKey)
+    FromSecretKey(&'a PrivateKey)
 }
 
 pub trait SignatureScheme {
@@ -58,6 +58,46 @@ impl_bytearray!(PrivateKey);
 
 pub struct PublicKey(Vec<u8>);
 impl_bytearray!(PublicKey);
+
+pub struct Signer<'a, 'b, T: 'a + SignatureScheme> {
+    scheme: &'a T,
+    key: &'b PrivateKey
+}
+
+impl<'a, 'b, T: 'a + SignatureScheme> Signer<'a, 'b, T> {
+    /// Constructs a new Signer
+    ///
+    /// # Arguments
+    ///
+    /// * `scheme` - a cryptographic signature scheme
+    /// * `private_key` - private key
+    pub fn new(scheme: &'a T, key: &'b PrivateKey) -> Self {
+        Signer { scheme, key }
+    }
+
+    /// Signs the given message.
+    ///
+    /// # Arguments
+    ///
+    /// * `message` - the message bytes
+    ///
+    /// # Returns
+    ///
+    /// * `signature` - the signature bytes
+    pub fn sign(&self, message: &[u8]) -> Result<Vec<u8>, CryptoError> {
+        self.scheme.sign(message, self.key)
+    }
+
+    /// Return the public key for this Signer instance.
+    ///
+    /// # Returns
+    ///
+    /// * `public_key` - the public key instance
+    pub fn get_public_key(&self) -> Result<PublicKey, CryptoError> {
+        let (pubk, _) = self.scheme.keypair(Some(KeyPairOption::FromSecretKey(self.key))).unwrap();
+        Ok(pubk)
+    }
+}
 
 pub trait EcdsaPublicKeyHandler {
     /// Returns the compressed bytes
