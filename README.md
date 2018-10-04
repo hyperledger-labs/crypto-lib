@@ -11,7 +11,10 @@ See:  https://docs.google.com/document/d/1JtFT5L-82egj6shgGXzTsNAg6_UHuMheKfsst6
 for more details.
 
 # Initial Committers
-hartm
+- hartm
+- mikelodder7
+- lovesh
+- vaporos
 
 # Sponsor
 Hart Montgomery
@@ -38,6 +41,22 @@ us on [Jira's Rocket.Chat](chat.hyperledger.org) at #indy-sdk to discuss.
 ## Building Crypto-Lib
 
 1. Install Rust and rustup (https://www.rust-lang.org/install.html).
+1. Install Libsodium
+    - For Mac OS X
+```
+brew install libsodium
+
+or to build it from scratch
+
+brew install autoconf
+brew install automake
+git clone git@github.com:jedisct1/libsodium.git
+cd libsodium
+./autoconf
+./configure
+make
+sudo make install
+```
 1. Checkout and build the library:
 
    ```
@@ -86,7 +105,7 @@ Builded binaries can be downloaded from https://repo.sovrin.org:
 * ios/libindy_crypto/stable/ - Pods for iOS
 * rhel/libindy_crypto/{master,stable,rc} - RHEL rpms
 
-Also Ubundu deb packages can be installed from APT repository:
+Also Ubuntu deb packages can be installed from APT repository:
 ```
 apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 68DB5E88
 sudo add-apt-repository "deb https://repo.sovrin.org/sdk/deb xenial stable"
