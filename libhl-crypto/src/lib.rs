@@ -72,4 +72,33 @@ pub mod pair;
 #[macro_use]
 extern crate lazy_static;
 
+pub mod hash;
+pub mod keys;
 pub mod signatures;
+pub mod encoding;
+#[derive(Debug)]
+pub enum CryptoError {
+    /// Returned when trying to create an algorithm which does not exist.
+    NoSuchAlgorithm(String),
+    /// Returned when an error occurs during deserialization of a Private or
+    /// Public key from various formats.
+    ParseError(String),
+    /// Returned when an error occurs during the signing process.
+    SigningError(String),
+    /// Returned when an error occurs during key generation
+    KeyGenError(String),
+}
+
+#[cfg(feature = "native")]
+impl From<libsecp256k1::Error> for CryptoError {
+    fn from(error: libsecp256k1::Error) -> CryptoError {
+        match error {
+            libsecp256k1::Error::IncorrectSignature => CryptoError::ParseError("Incorrect Signature".to_string()),
+            libsecp256k1::Error::InvalidMessage => CryptoError::ParseError("Invalid Message".to_string()),
+            libsecp256k1::Error::InvalidPublicKey => CryptoError::ParseError("Invalid Public Key".to_string()),
+            libsecp256k1::Error::InvalidSignature => CryptoError::ParseError("Invalid Signature".to_string()),
+            libsecp256k1::Error::InvalidSecretKey => CryptoError::ParseError("Invalid Secret Key".to_string()),
+            libsecp256k1::Error::InvalidRecoveryId => CryptoError::ParseError("Invalid Recovery Id".to_string())
+        }
+    }
+}

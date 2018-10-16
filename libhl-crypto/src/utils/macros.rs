@@ -16,6 +16,29 @@ macro_rules! array_copy {
     }
 }
 
+macro_rules! impl_hasher {
+    ($thing:ident,$wrapped:ident) => {
+        impl Hasher for $thing {
+            #[inline]
+            fn new() -> $thing {
+                $thing($wrapped::new())
+            }
+            #[inline]
+            fn reset(&mut self) {
+                self.0.init()
+            }
+            #[inline]
+            fn update(&mut self, data: &[u8]) {
+                self.0.process_array(data)
+            }
+            #[inline]
+            fn digest(&mut self) -> Result<Vec<u8>, CryptoError> {
+                Ok(self.0.hash().to_vec())
+            }
+        }
+    };
+}
+
 macro_rules! impl_bytearray {
     ($thing:ident) => {
         impl $thing {
