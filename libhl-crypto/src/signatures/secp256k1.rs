@@ -1,5 +1,5 @@
 use super::*;
-use hash::{hash, HashAlgorithm};
+use hash::{digest, DigestAlgorithm};
 use CryptoError;
 
 use rand::os::OsRng;
@@ -99,14 +99,14 @@ mod ecdsa_secp256k1sha256 {
             Ok((PublicKey(pk.serialize().to_vec()), PrivateKey(sk[..].to_vec())))
         }
         pub fn sign(&self, message: &[u8], sk: &PrivateKey) -> Result<Vec<u8>, CryptoError> {
-            let h = hash(HashAlgorithm::SHA2_256, message)?;
+            let h = digest(DigestAlgorithm::SHA2_256, message)?;
             let msg = libsecp256k1::Message::from_slice(h.as_slice())?;
             let s = libsecp256k1::key::SecretKey::from_slice(&self.0, &sk[..])?;
             let sig = self.0.sign(&msg, &s);
             Ok(sig.serialize_compact(&self.0).to_vec())
         }
         pub fn verify(&self, message: &[u8], signature: &[u8], pk: &PublicKey) -> Result<bool, CryptoError> {
-            let h = hash(HashAlgorithm::SHA2_256, message)?;
+            let h = digest(DigestAlgorithm::SHA2_256, message)?;
             let msg = libsecp256k1::Message::from_slice(h.as_slice())?;
             let p = libsecp256k1::PublicKey::from_slice(&self.0, &pk[..])?;
             let sig = libsecp256k1::Signature::from_compact(&self.0, signature)?;
@@ -187,14 +187,14 @@ mod ecdsa_secp256k1sha256 {
             Ok((PublicKey(pk.to_vec()), PrivateKey(sk.to_vec())))
         }
         pub fn sign(&self, message: &[u8], sk: &PrivateKey) -> Result<Vec<u8>, CryptoError> {
-            let h = hash(HashAlgorithm::SHA2_256, message)?;
+            let h = digest(DigestAlgorithm::SHA2_256, message)?;
             match rustlibsecp256k1::sign(h.as_slice(), array_ref!(sk[..], 0, PRIVATE_KEY_SIZE)) {
                 Ok(sig) => Ok(sig.to_vec()),
                 Err(_) => Err(CryptoError::SigningError("".to_string()))
             }
         }
         pub fn verify(&self, message: &[u8], signature: &[u8], pk: &PublicKey) -> Result<bool, CryptoError> {
-            let h = hash(HashAlgorithm::SHA2_256, message)?;
+            let h = digest(DigestAlgorithm::SHA2_256, message)?;
             let uncompressed_pk = self.serialize_uncompressed(&pk);
             match rustlibsecp256k1::verify(h.as_slice(),
                                            array_ref!(signature, 0, SIGNATURE_SIZE),
@@ -396,7 +396,7 @@ mod test {
         let context = libsecp256k1::Secp256k1::new();
         let pk = libsecp256k1::key::PublicKey::from_slice(&context, hex::hex2bin(PUBLIC_KEY).unwrap().as_slice()).unwrap();
 
-        let h = hash(HashAlgorithm::SHA2_256, &MESSAGE_1).unwrap();
+        let h = digest(DigestAlgorithm::SHA2_256, &MESSAGE_1).unwrap();
         let msg = libsecp256k1::Message::from_slice(h.as_slice()).unwrap();
 
         //Check if signatures produced here can be verified by libsecp256k1
@@ -439,7 +439,7 @@ mod test {
                 let mut context = libsecp256k1::Secp256k1::new();
                 let sk = libsecp256k1::key::SecretKey::from_slice(&context, hex::hex2bin(PRIVATE_KEY).unwrap().as_slice()).unwrap();
 
-                let h = hash(HashAlgorithm::SHA2_256, &MESSAGE_1).unwrap();
+                let h = digest(DigestAlgorithm::SHA2_256, &MESSAGE_1).unwrap();
 
                 let msg = libsecp256k1::Message::from_slice(h.as_slice()).unwrap();
                 let sig_1 = context.sign(&msg, &sk).serialize_compact(&context);

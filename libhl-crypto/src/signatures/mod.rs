@@ -2,13 +2,7 @@ pub mod secp256k1;
 pub mod ed25519;
 
 use CryptoError;
-use keys::{PrivateKey, PublicKey};
-
-
-pub enum KeyPairOption<'a> {
-    UseSeed(Vec<u8>),
-    FromSecretKey(&'a PrivateKey)
-}
+use keys::{PrivateKey, PublicKey, KeyPairOption};
 
 pub trait SignatureScheme {
     fn new() -> Self;

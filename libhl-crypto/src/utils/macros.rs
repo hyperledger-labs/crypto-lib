@@ -18,7 +18,7 @@ macro_rules! array_copy {
 
 macro_rules! impl_hasher {
     ($thing:ident,$wrapped:ident) => {
-        impl Hasher for $thing {
+        impl Digest for $thing {
             #[inline]
             fn new() -> $thing {
                 $thing($wrapped::new())
@@ -32,7 +32,7 @@ macro_rules! impl_hasher {
                 self.0.process_array(data)
             }
             #[inline]
-            fn digest(&mut self) -> Result<Vec<u8>, CryptoError> {
+            fn finalize(&mut self) -> Result<Vec<u8>, CryptoError> {
                 Ok(self.0.hash().to_vec())
             }
         }
