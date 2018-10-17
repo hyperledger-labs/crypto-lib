@@ -171,7 +171,8 @@ mod ecdsa_secp256k1sha256 {
                             KeyPairOption::UseSeed(seed) => {
                                 let mut rng = ChaChaRng::from_seed(seed.chunks(4).map(get_u32).collect::<Vec<u32>>().as_slice());
                                 rng.fill_bytes(&mut sk);
-                                sk = sha256(&sk[..]);
+                                let d = digest(DigestAlgorithm::SHA2_256, &sk[..])?;
+                                array_copy!(d.as_slice(), sk)
                             },
                             KeyPairOption::FromSecretKey(s) => array_copy!(s, sk)
                         }
@@ -179,7 +180,8 @@ mod ecdsa_secp256k1sha256 {
                     None => {
                         let mut rng = OsRng::new().map_err(|err| CryptoError::KeyGenError(format!("{}", err)))?;
                         rng.fill_bytes(&mut sk);
-                        sk = sha256(&sk[..]);
+                        let d = digest(DigestAlgorithm::SHA2_256, &sk[..])?;
+                        array_copy!(d.as_slice(), sk);
                     }
                 };
             let mut pk = [0u8; PUBLIC_KEY_SIZE]; //Compressed
@@ -188,7 +190,7 @@ mod ecdsa_secp256k1sha256 {
         }
         pub fn sign(&self, message: &[u8], sk: &PrivateKey) -> Result<Vec<u8>, CryptoError> {
             let h = digest(DigestAlgorithm::SHA2_256, message)?;
-            match rustlibsecp256k1::sign(h.as_slice(), array_ref!(sk[..], 0, PRIVATE_KEY_SIZE)) {
+            match rustlibsecp256k1::sign(array_ref!(h.as_slice(), 0, SIGNATURE_POINT_SIZE), array_ref!(sk[..], 0, PRIVATE_KEY_SIZE)) {
                 Ok(sig) => Ok(sig.to_vec()),
                 Err(_) => Err(CryptoError::SigningError("".to_string()))
             }
@@ -196,7 +198,7 @@ mod ecdsa_secp256k1sha256 {
         pub fn verify(&self, message: &[u8], signature: &[u8], pk: &PublicKey) -> Result<bool, CryptoError> {
             let h = digest(DigestAlgorithm::SHA2_256, message)?;
             let uncompressed_pk = self.serialize_uncompressed(&pk);
-            match rustlibsecp256k1::verify(h.as_slice(),
+            match rustlibsecp256k1::verify(array_ref!(h.as_slice(), 0, SIGNATURE_POINT_SIZE),
                                            array_ref!(signature, 0, SIGNATURE_SIZE),
                                            array_ref!(uncompressed_pk.as_slice(), 0, PUBLIC_UNCOMPRESSED_KEY_SIZE)) {
                 Ok(b) => Ok(b),
