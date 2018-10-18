@@ -5,6 +5,9 @@ pub enum DigestAlgorithm {
     Sha2_256,
     Sha2_384,
     Sha2_512,
+    Blake2b256,
+    Blake2b384,
+    Blake2b512
 }
 
 pub fn digest(algorithm: DigestAlgorithm, message: &[u8]) -> Result<Vec<u8>, CryptoError> {
@@ -24,11 +27,18 @@ pub fn digest(algorithm: DigestAlgorithm, message: &[u8]) -> Result<Vec<u8>, Cry
             hash.update(message);
             hash.finalize()
         }
+        DigestAlgorithm::Blake2b256 => {
+            let mut hash = blake2::Blake2b256::new();
+            hash.update(message);
+            hash.finalize()
+        }
+        DigestAlgorithm::Blake2b384 => {
+            let mut hash = blake2::Blake2b384::new();
             hash.update(message);
             hash.finalize()
         },
-        DigestAlgorithm::SHA2_512 => {
-            let mut hash = sha2::SHA512Hash::new();
+        DigestAlgorithm::Blake2b512 => {
+            let mut hash = blake2::Blake2b512::new();
             hash.update(message);
             hash.finalize()
         }
@@ -43,3 +53,4 @@ pub trait Digest {
 }
 
 pub mod sha2;
+pub mod blake2;

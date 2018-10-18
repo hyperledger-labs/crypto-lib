@@ -55,6 +55,8 @@ extern crate libc;
 
 extern crate time;
 
+extern crate blake2b_simd;
+
 pub mod cl;
 pub mod bls;
 
