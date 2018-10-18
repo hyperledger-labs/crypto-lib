@@ -87,6 +87,8 @@ pub enum CryptoError {
     SigningError(String),
     /// Returned when an error occurs during key generation
     KeyGenError(String),
+    /// Returned when an error occurs during digest generation
+    DigestGenError(String)
 }
 
 #[cfg(feature = "native")]

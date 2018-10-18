@@ -5,14 +5,37 @@ use amcl_3::hash256::HASH256;
 use amcl_3::hash384::HASH384;
 use amcl_3::hash512::HASH512;
 
-pub struct SHA256Hash(HASH256);
-impl_hasher!(SHA256Hash, HASH256);
+macro_rules! impl_hasher {
+    ($thing:ident,$wrapped:ident) => {
+        impl Digest for $thing {
+            #[inline]
+            fn new() -> $thing {
+                $thing($wrapped::new())
+            }
+            #[inline]
+            fn reset(&mut self) {
+                self.0.init()
+            }
+            #[inline]
+            fn update(&mut self, data: &[u8]) {
+                self.0.process_array(data)
+            }
+            #[inline]
+            fn finalize(&mut self) -> Result<Vec<u8>, CryptoError> {
+                Ok(self.0.hash().to_vec())
+            }
+        }
+    };
+}
 
-pub struct SHA384Hash(HASH384);
-impl_hasher!(SHA384Hash, HASH384);
+pub struct Sha256(HASH256);
+impl_hasher!(Sha256, HASH256);
 
-pub struct SHA512Hash(HASH512);
-impl_hasher!(SHA512Hash, HASH512);
+pub struct Sha384(HASH384);
+impl_hasher!(Sha384, HASH384);
+
+pub struct Sha512(HASH512);
+impl_hasher!(Sha512, HASH512);
 
 #[cfg(test)]
 mod tests {
@@ -21,7 +44,7 @@ mod tests {
 
     #[test]
     fn sha2_256() {
-        let mut hasher = SHA256Hash::new();
+        let mut hasher = Sha256::new();
         // Taken from https://csrc.nist.gov/csrc/media/publications/fips/180/2/archive/2002-08-01/documents/fips180-2withchangenotice.pdf
         let message = b"abc";
         let expected = hex2bin("BA7816BF8F01CFEA414140DE5DAE2223B00361A396177A9CB410FF61F20015AD").unwrap();
@@ -47,7 +70,7 @@ mod tests {
 
     #[test]
     fn sha2_384() {
-        let mut hasher = SHA384Hash::new();
+        let mut hasher = Sha384::new();
         // Taken from https://csrc.nist.gov/csrc/media/publications/fips/180/2/archive/2002-08-01/documents/fips180-2withchangenotice.pdf
         let message = b"abc";
         let expected = hex2bin("cb00753f45a35e8bb5a03d699ac65007272c32ab0eded1631a8b605a43ff5bed8086072ba1e7cc2358baeca134c825a7").unwrap();
@@ -73,7 +96,7 @@ mod tests {
 
     #[test]
     fn sha2_512() {
-        let mut hasher = SHA512Hash::new();
+        let mut hasher = Sha512::new();
         // Taken from https://csrc.nist.gov/csrc/media/publications/fips/180/2/archive/2002-08-01/documents/fips180-2withchangenotice.pdf
         let message = b"abc";
 

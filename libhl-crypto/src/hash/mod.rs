@@ -2,20 +2,28 @@ use CryptoError;
 
 #[derive(Debug)]
 pub enum DigestAlgorithm {
-    SHA2_256,
-    SHA2_384,
-    SHA2_512
+    Sha2_256,
+    Sha2_384,
+    Sha2_512,
 }
 
 pub fn digest(algorithm: DigestAlgorithm, message: &[u8]) -> Result<Vec<u8>, CryptoError> {
     match algorithm {
-        DigestAlgorithm::SHA2_256 => {
-            let mut hash = sha2::SHA256Hash::new();
+        DigestAlgorithm::Sha2_256 => {
+            let mut hash = sha2::Sha256::new();
             hash.update(message);
             hash.finalize()
         },
-        DigestAlgorithm::SHA2_384 => {
-            let mut hash = sha2::SHA384Hash::new();
+        DigestAlgorithm::Sha2_384 => {
+            let mut hash = sha2::Sha384::new();
+            hash.update(message);
+            hash.finalize()
+        },
+        DigestAlgorithm::Sha2_512 => {
+            let mut hash = sha2::Sha512::new();
+            hash.update(message);
+            hash.finalize()
+        }
             hash.update(message);
             hash.finalize()
         },
