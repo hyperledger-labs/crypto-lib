@@ -4,6 +4,8 @@ pub mod commitment;
 pub mod rsa;
 #[macro_use]
 pub mod logger;
+#[macro_use]
+pub mod macros;
 
 use bn::BigNumber;
 use errors::HLCryptoError;

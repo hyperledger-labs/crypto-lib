@@ -1,4 +1,5 @@
 use super::*;
+use super::super::CryptoError;
 
 pub const PRIVATE_KEY_SIZE: usize = 64;
 pub const PUBLIC_KEY_SIZE: usize = 32;
@@ -152,6 +153,7 @@ mod ed25519_sha2_512 {
 #[cfg(test)]
 mod test {
     use super::*;
+    use encoding::hex::{bin2hex, hex2bin};
     use libsodium_ffi as ffi;
 
     const MESSAGE_1: &[u8] = b"This is a dummy message for use with tests";
