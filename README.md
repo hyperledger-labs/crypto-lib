@@ -85,15 +85,25 @@ System OpenSSL library is required.
   - set INDY_CRYPTO_PREBUILT_DEPS_DIR=C:\BIN\x64
   - set OPENSSL_DIR=C:\BIN\x64
 
-## API Documentation
+## Documentation
+Project documentation is available via sphinx.
+Install sphinx:
+```
+pip install -U Sphinx
+```
+Build the project docs:
+```
+cd docs/
+make html
+```
 
 API documentation is now available as rust doc in code. See:
 * C API
-    - [BLS](libindy-crypto/src/ffi/bls.rs)
-    - [CL](libindy-crypto/src/ffi/cl)
+    - [BLS](libhl-crypto/src/ffi/bls.rs)
+    - [CL](libhl-crypto/src/ffi/cl)
 * Rust API
-    - [BLS](libindy-crypto/src/bls/mod.rs)
-    - [CL](libindy-crypto/src/cl)
+    - [BLS](libhl-crypto/src/bls/mod.rs)
+    - [CL](libhl-crypto/src/cl)
 
 ## Binaries
 
