@@ -40,6 +40,10 @@ us on [Jira's Rocket.Chat](chat.hyperledger.org) at #indy-sdk to discuss.
 
 ## Building Crypto-Lib
 
+1. Install xcode command line tools
+```
+xcode-select --install
+```
 1. Install Rust and rustup (https://www.rust-lang.org/install.html).
 1. Install Libsodium
     - For Mac OS X
