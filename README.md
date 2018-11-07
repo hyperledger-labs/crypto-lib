@@ -19,6 +19,8 @@ for more details.
 # Sponsor
 Hart Montgomery
 
+## Release management
+Crypto-lib has two main branches: *master* contains all the latest development code and *stable* for designated releases. All other branches are meant to be temporary or short lived feature branches. When a new release is expected i.e. an update to *stable* will be made, the *rc* branch will be forked from *master* and only bug fixes and documentation updates will be made. When *rc* has been sufficiently tested it is merged to *master* and *stable* then deleted. *stable* is tagged with an updated version number anytime a merge takes place. *hotfix* branches are based on *stable* and meant to fix single issues. As soon as the fix is complete, it is merged to *master* and *stable* and deleted.
 
 ## Before you Continue
 
