@@ -470,7 +470,8 @@ impl GroupOrderElement {
     }
 
     pub fn to_string(&self) -> Result<String, HLCryptoError> {
-        Ok(self.bn.to_hex())
+        let mut bn = self.bn;
+        Ok(bn.to_hex())
     }
 
     pub fn from_string(str: &str) -> Result<GroupOrderElement, HLCryptoError> {
@@ -513,7 +514,8 @@ impl GroupOrderElement {
 
 impl Debug for GroupOrderElement {
     fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
-        write!(f, "GroupOrderElement {{ bn: {} }}", self.bn.to_hex())
+        let mut bn = self.bn;
+        write!(f, "GroupOrderElement {{ bn: {} }}", bn.to_hex())
     }
 }
 
